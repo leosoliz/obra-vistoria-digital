@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,19 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Cores institucionais da Prefeitura de Presidente Getúlio
+				'dourado': {
+					DEFAULT: 'hsl(var(--dourado))',
+					claro: 'hsl(var(--dourado-claro))'
+				},
+				'azul-institucional': {
+					DEFAULT: 'hsl(var(--azul-institucional))',
+					escuro: 'hsl(var(--azul-escuro))'
+				},
+				'verde-institucional': {
+					DEFAULT: 'hsl(var(--verde-institucional))',
+					claro: 'hsl(var(--verde-claro))'
 				}
 			},
 			borderRadius: {
