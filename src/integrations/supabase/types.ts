@@ -45,6 +45,114 @@ export type Database = {
           },
         ]
       }
+      obra_vistorias: {
+        Row: {
+          created_at: string
+          data_vistoria: string
+          descricao_atividades: string
+          detalhes_pendencias: string | null
+          empresa_responsavel: string | null
+          engenheiro_responsavel: string | null
+          fiscal_assinatura: string | null
+          fiscal_matricula: string | null
+          fiscal_nome: string | null
+          fiscal_prefeitura: string | null
+          hora_vistoria: string
+          id: string
+          localizacao: string
+          nome_obra: string
+          numero_contrato: string | null
+          objetivo_encerramento: boolean | null
+          objetivo_inicio_obra: boolean | null
+          objetivo_medicao: boolean | null
+          objetivo_outros: string | null
+          objetivo_vistoria_rotina: boolean | null
+          objetivo_vistoria_tecnica: boolean | null
+          recomendacoes: string | null
+          representante_assinatura: string | null
+          representante_cargo: string | null
+          representante_nome: string | null
+          situacao_conformidade: boolean | null
+          situacao_finalizada: boolean | null
+          situacao_irregularidades: boolean | null
+          situacao_paralisada: boolean | null
+          situacao_pendencias: boolean | null
+          status: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          data_vistoria: string
+          descricao_atividades: string
+          detalhes_pendencias?: string | null
+          empresa_responsavel?: string | null
+          engenheiro_responsavel?: string | null
+          fiscal_assinatura?: string | null
+          fiscal_matricula?: string | null
+          fiscal_nome?: string | null
+          fiscal_prefeitura?: string | null
+          hora_vistoria: string
+          id?: string
+          localizacao: string
+          nome_obra: string
+          numero_contrato?: string | null
+          objetivo_encerramento?: boolean | null
+          objetivo_inicio_obra?: boolean | null
+          objetivo_medicao?: boolean | null
+          objetivo_outros?: string | null
+          objetivo_vistoria_rotina?: boolean | null
+          objetivo_vistoria_tecnica?: boolean | null
+          recomendacoes?: string | null
+          representante_assinatura?: string | null
+          representante_cargo?: string | null
+          representante_nome?: string | null
+          situacao_conformidade?: boolean | null
+          situacao_finalizada?: boolean | null
+          situacao_irregularidades?: boolean | null
+          situacao_paralisada?: boolean | null
+          situacao_pendencias?: boolean | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          data_vistoria?: string
+          descricao_atividades?: string
+          detalhes_pendencias?: string | null
+          empresa_responsavel?: string | null
+          engenheiro_responsavel?: string | null
+          fiscal_assinatura?: string | null
+          fiscal_matricula?: string | null
+          fiscal_nome?: string | null
+          fiscal_prefeitura?: string | null
+          hora_vistoria?: string
+          id?: string
+          localizacao?: string
+          nome_obra?: string
+          numero_contrato?: string | null
+          objetivo_encerramento?: boolean | null
+          objetivo_inicio_obra?: boolean | null
+          objetivo_medicao?: boolean | null
+          objetivo_outros?: string | null
+          objetivo_vistoria_rotina?: boolean | null
+          objetivo_vistoria_tecnica?: boolean | null
+          recomendacoes?: string | null
+          representante_assinatura?: string | null
+          representante_cargo?: string | null
+          representante_nome?: string | null
+          situacao_conformidade?: boolean | null
+          situacao_finalizada?: boolean | null
+          situacao_irregularidades?: boolean | null
+          situacao_paralisada?: boolean | null
+          situacao_pendencias?: boolean | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -180,6 +288,47 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      vistoria_fotos: {
+        Row: {
+          arquivo_url: string
+          created_at: string
+          id: string
+          legenda: string
+          ordem: number | null
+          tamanho_arquivo: number | null
+          tipo_arquivo: string | null
+          vistoria_id: string | null
+        }
+        Insert: {
+          arquivo_url: string
+          created_at?: string
+          id?: string
+          legenda: string
+          ordem?: number | null
+          tamanho_arquivo?: number | null
+          tipo_arquivo?: string | null
+          vistoria_id?: string | null
+        }
+        Update: {
+          arquivo_url?: string
+          created_at?: string
+          id?: string
+          legenda?: string
+          ordem?: number | null
+          tamanho_arquivo?: number | null
+          tipo_arquivo?: string | null
+          vistoria_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vistoria_fotos_vistoria_id_fkey"
+            columns: ["vistoria_id"]
+            isOneToOne: false
+            referencedRelation: "obra_vistorias"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

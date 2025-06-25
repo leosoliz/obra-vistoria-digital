@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,12 +17,25 @@ import {
   CheckCircle, 
   AlertTriangle, 
   Camera, 
-  PenTool 
+  PenTool,
+  Download,
+  Trash2,
+  LogOut
 } from "lucide-react";
-import { useState } from "react";
-import { toast } from "@/hooks/use-toast";
+import { useState, useEffect } from "react";
+import { useAuth } from '@/hooks/useAuth';
+import { useVistoria } from '@/hooks/useVistoria';
+import { CameraCapture } from '@/components/CameraCapture';
+import { generatePDF } from '@/utils/pdfGenerator';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 const Index = () => {
+  const { user, loading } = useAuth();
+  const { salvarVistoria, adicionarFoto, removerFoto, fotos, isLoading } = useVistoria();
+  const navigate = useNavigate();
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+
   const [formData, setFormData] = useState({
     nomeObra: "",
     localizacao: "",
@@ -39,7 +51,6 @@ const Index = () => {
     situacaoObra: "",
     detalhesPendencias: "",
     recomendacoes: "",
-    fotos: [],
     fiscalNome: "",
     fiscalMatricula: "",
     representanteNome: "",
@@ -62,13 +73,52 @@ const Index = () => {
     "Finalizada"
   ];
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/auth');
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Dados do formulário:", formData);
-    toast({
-      title: "Relatório Salvo",
-      description: "O relatório de vistoria foi salvo com sucesso!",
-    });
+    const vistoriaId = await salvarVistoria(formData);
+    
+    if (vistoriaId) {
+      // Reset form after successful save
+      setFormData({
+        nomeObra: "",
+        localizacao: "",
+        numeroContrato: "",
+        empresaResponsavel: "",
+        engenheiroResponsavel: "",
+        fiscalPrefeitura: "",
+        dataVistoria: "",
+        horaVistoria: "",
+        objetivoVistoria: [],
+        outroObjetivo: "",
+        descricaoAtividades: "",
+        situacaoObra: "",
+        detalhesPendencias: "",
+        recomendacoes: "",
+        fiscalNome: "",
+        fiscalMatricula: "",
+        representanteNome: "",
+        representanteCargo: ""
+      });
+    }
+  };
+
+  const handleGeneratePDF = async () => {
+    try {
+      await generatePDF(formData, fotos);
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+    }
   };
 
   const handleCheckboxChange = (objetivo, checked) => {
@@ -80,17 +130,41 @@ const Index = () => {
     }));
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-blue-50 to-green-50 flex items-center justify-center">
+        <div className="text-center">
+          <Building2 className="h-12 w-12 mx-auto mb-4 text-amber-600 animate-pulse" />
+          <p>Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-blue-50 to-green-50 p-4">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <Card className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
-          <CardHeader className="text-center">
+        <Card className="bg-gradient-to-r from-amber-600 via-blue-600 to-green-600 text-white">
+          <CardHeader className="text-center relative">
+            <Button
+              onClick={handleLogout}
+              variant="ghost"
+              size="sm"
+              className="absolute top-4 right-4 text-white hover:bg-white/20"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+            
             <div className="flex items-center justify-center mb-2">
               <Building2 className="h-8 w-8 mr-2" />
               <div>
-                <h1 className="text-2xl font-bold">PREFEITURA MUNICIPAL</h1>
-                <p className="text-blue-100">SECRETARIA DE OBRAS E SERVIÇOS URBANOS</p>
+                <h1 className="text-2xl font-bold">PREFEITURA MUNICIPAL DE PRESIDENTE GETÚLIO</h1>
+                <p className="text-amber-100">SECRETARIA DE PLANEJAMENTO E DESENVOLVIMENTO ECONÔMICO</p>
               </div>
             </div>
             <Badge variant="secondary" className="mx-auto bg-white text-blue-700">
@@ -101,9 +175,9 @@ const Index = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* 1. Identificação da Obra */}
-          <Card>
+          <Card className="border-l-4 border-l-amber-500">
             <CardHeader>
-              <CardTitle className="flex items-center text-blue-700">
+              <CardTitle className="flex items-center text-amber-700">
                 <FileText className="h-5 w-5 mr-2" />
                 1. IDENTIFICAÇÃO DA OBRA
               </CardTitle>
@@ -117,6 +191,7 @@ const Index = () => {
                     value={formData.nomeObra}
                     onChange={(e) => setFormData(prev => ({...prev, nomeObra: e.target.value}))}
                     placeholder="Digite o nome da obra"
+                    required
                   />
                 </div>
                 <div>
@@ -129,6 +204,7 @@ const Index = () => {
                     value={formData.localizacao}
                     onChange={(e) => setFormData(prev => ({...prev, localizacao: e.target.value}))}
                     placeholder="Endereço completo"
+                    required
                   />
                 </div>
                 <div>
@@ -180,6 +256,7 @@ const Index = () => {
                     type="date"
                     value={formData.dataVistoria}
                     onChange={(e) => setFormData(prev => ({...prev, dataVistoria: e.target.value}))}
+                    required
                   />
                 </div>
                 <div>
@@ -192,6 +269,7 @@ const Index = () => {
                     type="time"
                     value={formData.horaVistoria}
                     onChange={(e) => setFormData(prev => ({...prev, horaVistoria: e.target.value}))}
+                    required
                   />
                 </div>
               </div>
@@ -199,7 +277,7 @@ const Index = () => {
           </Card>
 
           {/* 2. Objetivo da Vistoria */}
-          <Card>
+          <Card className="border-l-4 border-l-blue-500">
             <CardHeader>
               <CardTitle className="flex items-center text-blue-700">
                 <Target className="h-5 w-5 mr-2" />
@@ -234,9 +312,9 @@ const Index = () => {
           </Card>
 
           {/* 3. Descrição das Atividades */}
-          <Card>
+          <Card className="border-l-4 border-l-green-500">
             <CardHeader>
-              <CardTitle className="flex items-center text-blue-700">
+              <CardTitle className="flex items-center text-green-700">
                 <FileText className="h-5 w-5 mr-2" />
                 3. DESCRIÇÃO DAS ATIVIDADES VERIFICADAS
               </CardTitle>
@@ -250,14 +328,15 @@ const Index = () => {
                 onChange={(e) => setFormData(prev => ({...prev, descricaoAtividades: e.target.value}))}
                 placeholder="Digite a descrição detalhada das atividades verificadas..."
                 className="min-h-32"
+                required
               />
             </CardContent>
           </Card>
 
           {/* 4. Situação da Obra */}
-          <Card>
+          <Card className="border-l-4 border-l-emerald-500">
             <CardHeader>
-              <CardTitle className="flex items-center text-blue-700">
+              <CardTitle className="flex items-center text-emerald-700">
                 <CheckCircle className="h-5 w-5 mr-2" />
                 4. SITUAÇÃO DA OBRA
               </CardTitle>
@@ -273,7 +352,7 @@ const Index = () => {
                       value={situacao}
                       checked={formData.situacaoObra === situacao}
                       onChange={(e) => setFormData(prev => ({...prev, situacaoObra: e.target.value}))}
-                      className="h-4 w-4 text-blue-600"
+                      className="h-4 w-4 text-emerald-600"
                     />
                     <Label htmlFor={situacao} className="text-sm font-medium">
                       {situacao}
@@ -295,9 +374,9 @@ const Index = () => {
           </Card>
 
           {/* 5. Recomendações */}
-          <Card>
+          <Card className="border-l-4 border-l-orange-500">
             <CardHeader>
-              <CardTitle className="flex items-center text-blue-700">
+              <CardTitle className="flex items-center text-orange-700">
                 <AlertTriangle className="h-5 w-5 mr-2" />
                 5. RECOMENDAÇÕES / PROVIDÊNCIAS
               </CardTitle>
@@ -316,36 +395,55 @@ const Index = () => {
           </Card>
 
           {/* 6. Registro Fotográfico */}
-          <Card>
+          <Card className="border-l-4 border-l-purple-500">
             <CardHeader>
-              <CardTitle className="flex items-center text-blue-700">
+              <CardTitle className="flex items-center text-purple-700">
                 <Camera className="h-5 w-5 mr-2" />
                 6. REGISTRO FOTOGRÁFICO
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-gray-600 mb-4">
-                Anexar as imagens datadas e legendadas.
-              </p>
-              <div className="space-y-3">
-                <Input type="file" accept="image/*" multiple className="mb-2" />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Input placeholder="Legenda Foto 1" />
-                  <Input placeholder="Legenda Foto 2" />
-                  <Input placeholder="Legenda Foto 3" />
-                </div>
-                <Button type="button" variant="outline" className="w-full">
+              <div className="space-y-4">
+                <Button 
+                  type="button" 
+                  onClick={() => setIsCameraOpen(true)}
+                  className="w-full bg-purple-600 hover:bg-purple-700"
+                >
                   <Camera className="h-4 w-4 mr-2" />
-                  Adicionar Mais Fotos
+                  Tirar Foto
                 </Button>
+                
+                {fotos.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {fotos.map((foto, index) => (
+                      <div key={index} className="relative border rounded-lg p-2">
+                        <img 
+                          src={foto.preview} 
+                          alt={foto.legenda}
+                          className="w-full h-32 object-cover rounded"
+                        />
+                        <p className="text-sm mt-2 text-gray-600">{foto.legenda}</p>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          className="absolute top-1 right-1"
+                          onClick={() => removerFoto(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
 
           {/* 7. Assinaturas */}
-          <Card>
+          <Card className="border-l-4 border-l-gray-500">
             <CardHeader>
-              <CardTitle className="flex items-center text-blue-700">
+              <CardTitle className="flex items-center text-gray-700">
                 <PenTool className="h-5 w-5 mr-2" />
                 7. ASSINATURAS
               </CardTitle>
@@ -371,13 +469,6 @@ const Index = () => {
                       onChange={(e) => setFormData(prev => ({...prev, fiscalMatricula: e.target.value}))}
                       placeholder="Número da matrícula"
                     />
-                  </div>
-                </div>
-                <div className="mt-3">
-                  <Label>Assinatura Digital</Label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                    <PenTool className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                    <p className="text-gray-500">Área para assinatura digital</p>
                   </div>
                 </div>
               </div>
@@ -406,28 +497,37 @@ const Index = () => {
                     />
                   </div>
                 </div>
-                <div className="mt-3">
-                  <Label>Assinatura Digital</Label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                    <PenTool className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                    <p className="text-gray-500">Área para assinatura digital</p>
-                  </div>
-                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Submit Button */}
+          {/* Submit Buttons */}
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700">
+            <Button 
+              type="submit" 
+              className="flex-1 bg-amber-600 hover:bg-amber-700"
+              disabled={isLoading}
+            >
               <FileText className="h-4 w-4 mr-2" />
-              Salvar Relatório
+              {isLoading ? 'Salvando...' : 'Salvar Relatório'}
             </Button>
-            <Button type="button" variant="outline" className="flex-1">
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="flex-1 border-blue-600 text-blue-600 hover:bg-blue-50"
+              onClick={handleGeneratePDF}
+            >
+              <Download className="h-4 w-4 mr-2" />
               Gerar PDF
             </Button>
           </div>
         </form>
+
+        <CameraCapture
+          isOpen={isCameraOpen}
+          onClose={() => setIsCameraOpen(false)}
+          onPhotoCaptured={adicionarFoto}
+        />
       </div>
     </div>
   );
