@@ -172,7 +172,24 @@ const Index = () => {
     }
 
     const vistoriaId = await salvarVistoria({
-      ...data,
+      nomeObra: data.nomeObra,
+      localizacao: data.localizacao,
+      numeroContrato: data.numeroContrato || '',
+      empresaResponsavel: data.empresaResponsavel || '',
+      engenheiroResponsavel: data.engenheiroResponsavel || '',
+      fiscalPrefeitura: data.fiscalPrefeitura || '',
+      dataVistoria: data.dataVistoria,
+      horaVistoria: data.horaVistoria,
+      objetivoVistoria: data.objetivoVistoria,
+      outroObjetivo: data.outroObjetivo || '',
+      descricaoAtividades: data.descricaoAtividades,
+      situacaoObra: data.situacaoObra,
+      detalhesPendencias: data.detalhesPendencias || '',
+      recomendacoes: data.recomendacoes || '',
+      fiscalNome: data.fiscalNome || '',
+      fiscalMatricula: data.fiscalMatricula || '',
+      representanteNome: data.representanteNome || '',
+      representanteCargo: data.representanteCargo || '',
       latitude: latitude || 0,
       longitude: longitude || 0
     });
@@ -365,40 +382,40 @@ const Index = () => {
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="objetivoInicioObra"
-                    checked={watchedObjetivos?.includes('Início de Obra')}
-                    onCheckedChange={(checked) => handleObjetivoChange('Início de Obra', checked || false)}
+                    checked={watchedObjetivos?.includes('Início de Obra') || false}
+                    onCheckedChange={(checked) => handleObjetivoChange('Início de Obra', Boolean(checked))}
                   />
                   <Label htmlFor="objetivoInicioObra">Início de Obra</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="objetivoVistoriaRotina"
-                    checked={watchedObjetivos?.includes('Vistoria de Rotina')}
-                    onCheckedChange={(checked) => handleObjetivoChange('Vistoria de Rotina', checked || false)}
+                    checked={watchedObjetivos?.includes('Vistoria de Rotina') || false}
+                    onCheckedChange={(checked) => handleObjetivoChange('Vistoria de Rotina', Boolean(checked))}
                   />
                   <Label htmlFor="objetivoVistoriaRotina">Vistoria de Rotina</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="objetivoMedicao"
-                    checked={watchedObjetivos?.includes('Medição')}
-                    onCheckedChange={(checked) => handleObjetivoChange('Medição', checked || false)}
+                    checked={watchedObjetivos?.includes('Medição') || false}
+                    onCheckedChange={(checked) => handleObjetivoChange('Medição', Boolean(checked))}
                   />
                   <Label htmlFor="objetivoMedicao">Medição</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="objetivoVistoriaTecnica"
-                    checked={watchedObjetivos?.includes('Vistoria Técnica/Análise de Conformidade')}
-                    onCheckedChange={(checked) => handleObjetivoChange('Vistoria Técnica/Análise de Conformidade', checked || false)}
+                    checked={watchedObjetivos?.includes('Vistoria Técnica/Análise de Conformidade') || false}
+                    onCheckedChange={(checked) => handleObjetivoChange('Vistoria Técnica/Análise de Conformidade', Boolean(checked))}
                   />
                   <Label htmlFor="objetivoVistoriaTecnica">Vistoria Técnica/Análise de Conformidade</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="objetivoEncerramento"
-                    checked={watchedObjetivos?.includes('Encerramento/Entrega da Obra')}
-                    onCheckedChange={(checked) => handleObjetivoChange('Encerramento/Entrega da Obra', checked || false)}
+                    checked={watchedObjetivos?.includes('Encerramento/Entrega da Obra') || false}
+                    onCheckedChange={(checked) => handleObjetivoChange('Encerramento/Entrega da Obra', Boolean(checked))}
                   />
                   <Label htmlFor="objetivoEncerramento">Encerramento/Entrega da Obra</Label>
                 </div>
