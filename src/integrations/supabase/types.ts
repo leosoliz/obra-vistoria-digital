@@ -59,7 +59,9 @@ export type Database = {
           fiscal_prefeitura: string | null
           hora_vistoria: string
           id: string
+          latitude: number | null
           localizacao: string
+          longitude: number | null
           nome_obra: string
           numero_contrato: string | null
           objetivo_encerramento: boolean | null
@@ -94,7 +96,9 @@ export type Database = {
           fiscal_prefeitura?: string | null
           hora_vistoria: string
           id?: string
+          latitude?: number | null
           localizacao: string
+          longitude?: number | null
           nome_obra: string
           numero_contrato?: string | null
           objetivo_encerramento?: boolean | null
@@ -129,7 +133,9 @@ export type Database = {
           fiscal_prefeitura?: string | null
           hora_vistoria?: string
           id?: string
+          latitude?: number | null
           localizacao?: string
+          longitude?: number | null
           nome_obra?: string
           numero_contrato?: string | null
           objetivo_encerramento?: boolean | null

@@ -34,6 +34,10 @@ interface VistoriaData {
   fiscalMatricula: string;
   representanteNome: string;
   representanteCargo: string;
+
+  // Coordenadas GPS
+  latitude?: number;
+  longitude?: number;
 }
 
 interface CapturedPhoto {
@@ -103,6 +107,10 @@ export const useVistoria = () => {
         data_vistoria: data.dataVistoria,
         hora_vistoria: data.horaVistoria,
         
+        // Coordenadas GPS
+        latitude: data.latitude || null,
+        longitude: data.longitude || null,
+        
         // Objetivos
         objetivo_inicio_obra: data.objetivoVistoria.includes('Início de Obra'),
         objetivo_vistoria_rotina: data.objetivoVistoria.includes('Vistoria de Rotina'),
@@ -152,6 +160,9 @@ export const useVistoria = () => {
         title: "Sucesso!",
         description: "Relatório de vistoria salvo com sucesso!",
       });
+
+      // Limpar fotos após salvar
+      setFotos([]);
 
       return vistoriaResult.id;
 
