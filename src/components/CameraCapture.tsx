@@ -104,7 +104,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     canvas.height = video.videoHeight;
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    const photoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+    const photoDataUrl = canvas.toDataURL();
     console.log('Foto capturada, tamanho do dataURL:', photoDataUrl.length);
     setPhoto(photoDataUrl);
   }, []);
@@ -136,12 +136,12 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
             console.error('Falha ao criar blob');
             reject(new Error('Erro ao converter canvas para blob'));
           }
-        }, 'image/jpeg', 0.8);
+        });
       });
 
       // Criar arquivo
-      const file = new File([blob], `vistoria-${Date.now()}.jpg`, {
-        type: 'image/jpeg',
+      const file = new File([blob], `vistoria-${Date.now()}.png`, {
+        type: 'image/png',
         lastModified: Date.now()
       });
 
