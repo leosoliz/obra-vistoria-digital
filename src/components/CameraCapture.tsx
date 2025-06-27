@@ -102,6 +102,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     const photoDataUrl = canvas.toDataURL();
+    console.log(photoDataUrl);
     console.log('Foto capturada, tamanho do dataURL:', photoDataUrl.length);
     setPhoto(photoDataUrl);
   }, []);
