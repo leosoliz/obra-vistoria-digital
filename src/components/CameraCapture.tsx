@@ -123,7 +123,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 //    canvas.width = 1280;
 //    canvas.height = 720;
     console.log('Canvas dimensions:', canvas.width, 'x', canvas.height);
-    
+    console.log(canvas);
     try {
       console.log('Convertendo canvas para blob...');
       
