@@ -191,23 +191,7 @@ const Index = () => {
     if (vistoriaId) {
       // Gerar PDF
       try {
-        const pdfBlob = await generatePDF({
-          ...data,
-          fotos: fotos.map(foto => ({
-            url: foto.preview,
-            legenda: foto.legenda
-          }))
-        });
-
-        // Download do PDF
-        const url = URL.createObjectURL(pdfBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `vistoria-${data.nomeObra}-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        await generatePDF(data, fotos);
 
         toast({
           title: "Sucesso!",

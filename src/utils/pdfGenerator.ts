@@ -1,26 +1,25 @@
 
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 interface VistoriaData {
   nomeObra: string;
   localizacao: string;
-  numeroContrato: string;
-  empresaResponsavel: string;
-  engenheiroResponsavel: string;
-  fiscalPrefeitura: string;
+  numeroContrato?: string;
+  empresaResponsavel?: string;
+  engenheiroResponsavel?: string;
+  fiscalPrefeitura?: string;
   dataVistoria: string;
   horaVistoria: string;
   objetivoVistoria: string[];
-  outroObjetivo: string;
+  outroObjetivo?: string;
   descricaoAtividades: string;
   situacaoObra: string;
-  detalhesPendencias: string;
-  recomendacoes: string;
-  fiscalNome: string;
-  fiscalMatricula: string;
-  representanteNome: string;
-  representanteCargo: string;
+  detalhesPendencias?: string;
+  recomendacoes?: string;
+  fiscalNome?: string;
+  fiscalMatricula?: string;
+  representanteNome?: string;
+  representanteCargo?: string;
 }
 
 interface CapturedPhoto {
@@ -79,10 +78,10 @@ export const generatePDF = async (data: VistoriaData, fotos: CapturedPhoto[]) =>
   addText('1. IDENTIFICAÇÃO DA OBRA', 20, 12, true);
   addText(`Nome da Obra: ${data.nomeObra}`, 20);
   addText(`Localização: ${data.localizacao}`, 20);
-  addText(`Número do Contrato/Processo: ${data.numeroContrato}`, 20);
-  addText(`Empresa Responsável: ${data.empresaResponsavel}`, 20);
-  addText(`Engenheiro Responsável: ${data.engenheiroResponsavel}`, 20);
-  addText(`Fiscal da Prefeitura: ${data.fiscalPrefeitura}`, 20);
+  addText(`Número do Contrato/Processo: ${data.numeroContrato || ''}`, 20);
+  addText(`Empresa Responsável: ${data.empresaResponsavel || ''}`, 20);
+  addText(`Engenheiro Responsável: ${data.engenheiroResponsavel || ''}`, 20);
+  addText(`Fiscal da Prefeitura: ${data.fiscalPrefeitura || ''}`, 20);
   addText(`Data da Vistoria: ${data.dataVistoria}`, 20);
   addText(`Hora: ${data.horaVistoria}`, 20);
   currentY += 10;
@@ -181,8 +180,8 @@ export const generatePDF = async (data: VistoriaData, fotos: CapturedPhoto[]) =>
   
   if (data.fiscalNome || data.fiscalMatricula) {
     addText('Fiscal Técnico da Prefeitura:', 20, 10, true);
-    addText(`Nome: ${data.fiscalNome}`, 20);
-    addText(`Matrícula: ${data.fiscalMatricula}`, 20);
+    addText(`Nome: ${data.fiscalNome || ''}`, 20);
+    addText(`Matrícula: ${data.fiscalMatricula || ''}`, 20);
     currentY += 20; // Espaço para assinatura
     addText('Assinatura: _______________________________', 20);
     currentY += 15;
@@ -190,8 +189,8 @@ export const generatePDF = async (data: VistoriaData, fotos: CapturedPhoto[]) =>
 
   if (data.representanteNome || data.representanteCargo) {
     addText('Representante da Empresa Executora:', 20, 10, true);
-    addText(`Nome: ${data.representanteNome}`, 20);
-    addText(`Cargo: ${data.representanteCargo}`, 20);
+    addText(`Nome: ${data.representanteNome || ''}`, 20);
+    addText(`Cargo: ${data.representanteCargo || ''}`, 20);
     currentY += 20; // Espaço para assinatura
     addText('Assinatura: _______________________________', 20);
   }
