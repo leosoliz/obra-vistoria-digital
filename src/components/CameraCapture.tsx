@@ -150,7 +150,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           }
         }, 'image/png');
       });
-      console.log(blobToBase64(blob));
+      
       // Criar arquivo
       const file = new File([blob], `vistoria-${Date.now()}.png`, {
         type: 'image/png',
