@@ -144,19 +144,19 @@ export const generatePDF = async (data: VistoriaData, fotos: CapturedPhoto[]) =>
         
         let { width, height } = img;
         
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width;
-          width = maxWidth;
-        }
+//        if (width > maxWidth) {
+//          height = (height * maxWidth) / width;
+//          width = maxWidth;
+//        }
+//        
+//        if (height > maxHeight) {
+//          width = (width * maxHeight) / height;
+//          height = maxHeight;
+//        }
         
-        if (height > maxHeight) {
-          width = (width * maxHeight) / height;
-          height = maxHeight;
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        ctx?.drawImage(img, 0, 0, width, height);
+        canvas.width = width/50;
+        canvas.height = height/50;
+        ctx?.drawImage(img, 0, 0, width/50, height/50);
         
         const imgData = canvas.toDataURL();
         
