@@ -164,7 +164,7 @@ export const generatePDF = async (data: VistoriaData, fotos: CapturedPhoto[]) =>
         console.log(imgData);
         checkPageBreak(height + 20);
         
-        pdf.addImage(imgData, 'PNG', 30, currentY, width, height);
+        pdf.addImage(imgData, 'PNG', 30, currentY, width/3, height/3);
         currentY += height + 5;
         
         addText(`Foto ${i + 1}: ${foto.legenda}`, 30, 9);
