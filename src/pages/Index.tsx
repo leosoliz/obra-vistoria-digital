@@ -87,7 +87,6 @@ const Index = () => {
 
   const watchedObjetivos = watch('objetivoVistoria');
 
-  // Efeito para preencher automaticamente os dados quando o usuário e perfil estiverem carregados
   useEffect(() => {
     if (profile && !profileLoading) {
       setValue('fiscalPrefeitura', profile.full_name);
@@ -95,7 +94,6 @@ const Index = () => {
     }
   }, [profile, profileLoading, setValue]);
 
-  // Efeito para obter localização automaticamente quando o componente carregar
   useEffect(() => {
     const getInitialLocation = async () => {
       const location = await requestLocation();
@@ -109,7 +107,6 @@ const Index = () => {
     getInitialLocation();
   }, [requestLocation, formatLocationString, setValue]);
 
-  // Verificar autenticação
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/auth');
@@ -138,18 +135,26 @@ const Index = () => {
   };
 
   const handleCameraCapture = (photo: { file: File; preview: string; legenda: string }) => {
-    console.log('Recebendo foto capturada:', {
+    console.log('Index.tsx - Recebendo foto capturada:', {
       fileSize: photo.file.size,
       fileName: photo.file.name,
-      legendaLength: photo.legenda.length
+      legendaLength: photo.legenda.length,
+      previewLength: photo.preview.length
     });
     
+    console.log('Index.tsx - Adicionando foto ao estado...');
     adicionarFoto(photo);
+    
+    console.log('Index.tsx - Fechando modal da câmara...');
     setShowCamera(false);
+    
+    console.log('Index.tsx - Mostrando toast de sucesso...');
     toast({
       title: "Foto adicionada",
       description: `Foto "${photo.legenda}" capturada com sucesso!`
     });
+    
+    console.log('Index.tsx - Processo de captura concluído');
   };
 
   const handleGetLocation = async () => {
@@ -562,7 +567,10 @@ const Index = () => {
             <CardContent className="space-y-4">
               <Button
                 type="button"
-                onClick={() => setShowCamera(true)}
+                onClick={() => {
+                  console.log('Botão capturar foto clicado, abrindo câmera...');
+                  setShowCamera(true);
+                }}
                 className="w-full"
                 variant="outline"
                 disabled={fotos.length >= 5}
@@ -582,7 +590,10 @@ const Index = () => {
                       />
                       <Button
                         type="button"
-                        onClick={() => removerFoto(index)}
+                        onClick={() => {
+                          console.log(`Removendo foto ${index}...`);
+                          removerFoto(index);
+                        }}
                         size="sm"
                         variant="destructive"
                         className="absolute top-2 right-2 h-6 w-6 p-0"
@@ -631,7 +642,10 @@ const Index = () => {
         {showCamera && fotos.length < 5 && (
           <CameraCapture
             onCapture={handleCameraCapture}
-            onClose={() => setShowCamera(false)}
+            onClose={() => {
+              console.log('Fechando câmera sem capturar foto...');
+              setShowCamera(false);
+            }}
           />
         )}
       </div>

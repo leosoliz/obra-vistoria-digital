@@ -80,34 +80,51 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
   }, [facingMode, startCamera]);
 
   const capturePhoto = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current) return;
+    console.log('Iniciando captura de foto...');
+    if (!videoRef.current || !canvasRef.current) {
+      console.error('Refs não disponíveis para captura');
+      return;
+    }
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
 
-    if (!context) return;
+    if (!context) {
+      console.error('Contexto do canvas não disponível');
+      return;
+    }
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     const photoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+    console.log('Foto capturada, tamanho do dataURL:', photoDataUrl.length);
     setPhoto(photoDataUrl);
   }, []);
 
   const confirmPhoto = useCallback(async () => {
-    if (!photo || !canvasRef.current) return;
+    console.log('Botão confirmar pressionado');
+    console.log('Estado atual - photo:', !!photo, 'canvas:', !!canvasRef.current, 'legenda:', legenda);
+    
+    if (!photo || !canvasRef.current) {
+      console.error('Dados necessários não disponíveis para confirmação');
+      return;
+    }
 
     const canvas = canvasRef.current;
     
     try {
+      console.log('Convertendo canvas para blob...');
       // Converter canvas para blob
       const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob((blob) => {
           if (blob) {
+            console.log('Blob criado com sucesso, tamanho:', blob.size);
             resolve(blob);
           } else {
+            console.error('Falha ao criar blob');
             reject(new Error('Erro ao converter canvas para blob'));
           }
         }, 'image/jpeg', 0.8);
@@ -119,24 +136,36 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
         lastModified: Date.now()
       });
 
-      console.log('Foto confirmada, enviando para callback:', {
-        fileSize: file.size,
-        fileName: file.name,
-        legenda: legenda || 'Foto da vistoria'
+      console.log('Arquivo criado:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
       });
 
-      // Chamar callback com os dados da foto
-      onCapture({
+      const photoData = {
         file,
         preview: photo,
         legenda: legenda || 'Foto da vistoria'
+      };
+
+      console.log('Chamando onCapture com dados:', {
+        fileSize: photoData.file.size,
+        fileName: photoData.file.name,
+        legenda: photoData.legenda,
+        previewLength: photoData.preview.length
       });
+
+      // Chamar callback com os dados da foto
+      onCapture(photoData);
+
+      console.log('onCapture executado, parando stream...');
 
       // Parar stream da câmera
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
 
+      console.log('Fechando modal...');
       // Fechar modal
       onClose();
     } catch (error) {
@@ -145,11 +174,13 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
   }, [photo, legenda, onCapture, onClose, stream]);
 
   const retakePhoto = useCallback(() => {
+    console.log('Refazendo foto...');
     setPhoto(null);
     setLegenda('');
   }, []);
 
   const handleClose = useCallback(() => {
+    console.log('Fechando câmera...');
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
     }
@@ -157,6 +188,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
   }, [stream, onClose]);
 
   React.useEffect(() => {
+    console.log('Iniciando câmera...');
     startCamera();
     
     return () => {
@@ -200,7 +232,12 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
               className="mt-2"
             />
           </Card>
-          <Button onClick={confirmPhoto} className="w-full" size="lg">
+          <Button 
+            onClick={confirmPhoto} 
+            className="w-full" 
+            size="lg"
+            disabled={isLoading}
+          >
             Confirmar Foto
           </Button>
         </div>
