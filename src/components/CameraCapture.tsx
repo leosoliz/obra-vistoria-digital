@@ -171,7 +171,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       
       // Criar arquivo
       const file = new File([blob], `vistoria-${Date.now()}.png`, {
-        type: 'image/png',
+        type: blob.type,
         lastModified: Date.now()
       });
       console.log('Imagem....', await fileToBase64(file));
