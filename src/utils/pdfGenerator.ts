@@ -154,8 +154,8 @@ export const generatePDF = async (data: VistoriaData, fotos: CapturedPhoto[]) =>
 //          height = maxHeight;
 //        }
         
-        width = width / 10;
-        height = height / 10;
+//        width = width / 10;
+//        height = height / 10;
         canvas.width = width;
         canvas.height = height;
         ctx?.drawImage(img, 0, 0, width, height);
