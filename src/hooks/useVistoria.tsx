@@ -4,6 +4,24 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from '@/hooks/use-toast';
 
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+      } else {
+        reject(new Error("Erro ao converter para base64"));
+      }
+    };
+
+    reader.onerror = reject;
+
+    reader.readAsDataURL(file);
+  });
+}
+
 interface VistoriaData {
   // Identificação da obra
   nomeObra: string;
@@ -55,7 +73,7 @@ export const useVistoria = () => {
     if (!user) throw new Error('Usuário não autenticado');
     console.log('Fazendo upload....', foto.preview);
     const fileName = `${user.id}/${vistoriaId}/${Date.now()}-${ordem}.png`;
-    
+    console.log(fileToBase64(foto.file));
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('vistoria-fotos')
       .upload(fileName, foto.file);
