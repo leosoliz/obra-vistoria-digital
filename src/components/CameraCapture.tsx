@@ -22,6 +22,24 @@ function blobToBase64(blob: Blob): Promise<string> {
   });
 }
 
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+      } else {
+        reject(new Error("Erro ao converter para base64"));
+      }
+    };
+
+    reader.onerror = reject;
+
+    reader.readAsDataURL(file);
+  });
+}
+
 export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -156,7 +174,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
         type: 'image/png',
         lastModified: Date.now()
       });
-
+      console.log(fileToBase64(file));
       console.log('Arquivo criado:', {
         name: file.name,
         size: file.size,
