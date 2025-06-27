@@ -54,7 +54,7 @@ export const useVistoria = () => {
   const uploadFoto = async (foto: CapturedPhoto, vistoriaId: string, ordem: number) => {
     if (!user) throw new Error('Usuário não autenticado');
 
-    const fileName = `${user.id}/${vistoriaId}/${Date.now()}-${ordem}.jpg`;
+    const fileName = `${user.id}/${vistoriaId}/${Date.now()}-${ordem}.png`;
     
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('vistoria-fotos')
