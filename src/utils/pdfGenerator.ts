@@ -144,27 +144,25 @@ export const generatePDF = async (data: VistoriaData, fotos: CapturedPhoto[]) =>
         
         let { width, height } = img;
         
-//        if (width > maxWidth) {
-//          height = (height * maxWidth) / width;
-//          width = maxWidth;
-//        }
-//        
-//        if (height > maxHeight) {
-//          width = (width * maxHeight) / height;
-//          height = maxHeight;
-//        }
-        
-//        width = width / 10;
-//        height = height / 10;
         canvas.width = width;
         canvas.height = height;
         ctx?.drawImage(img, 0, 0, width, height);
         
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+
+        if (height > maxHeight) {
+          width = (width * maxHeight) / height;
+          height = maxHeight;
+        }
+        
         const imgData = canvas.toDataURL();
         
-        checkPageBreak(height / 10 + 20);
+        checkPageBreak(height + 20);
         
-        pdf.addImage(imgData, 'PNG', 30, currentY, width/10, height/10);
+        pdf.addImage(imgData, 'PNG', 30, currentY, width, height);
         currentY += height + 5;
         
         addText(`Foto ${i + 1}: ${foto.legenda}`, 30, 9);
