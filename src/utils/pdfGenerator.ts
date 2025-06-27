@@ -161,7 +161,7 @@ export const generatePDF = async (data: VistoriaData, fotos: CapturedPhoto[]) =>
         ctx?.drawImage(img, 0, 0, width, height);
         
         const imgData = canvas.toDataURL();
-        
+        console.log(imgData);
         checkPageBreak(height + 20);
         
         pdf.addImage(imgData, 'PNG', 30, currentY, width, height);
