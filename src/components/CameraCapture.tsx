@@ -81,6 +81,9 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 
   const capturePhoto = useCallback(() => {
     console.log('Iniciando captura de foto...');
+    console.log('videoRef.current:', !!videoRef.current);
+    console.log('canvasRef.current:', !!canvasRef.current);
+    
     if (!videoRef.current || !canvasRef.current) {
       console.error('Refs não disponíveis para captura');
       return;
@@ -95,6 +98,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       return;
     }
 
+    console.log('Video dimensions:', video.videoWidth, 'x', video.videoHeight);
+    
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -105,18 +110,22 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
   }, []);
 
   const confirmPhoto = useCallback(async () => {
-    console.log('Botão confirmar pressionado');
+    console.log('=== INÍCIO confirmPhoto ===');
     console.log('Estado atual - photo:', !!photo, 'canvas:', !!canvasRef.current, 'legenda:', legenda);
     
     if (!photo || !canvasRef.current) {
       console.error('Dados necessários não disponíveis para confirmação');
+      console.log('photo exists:', !!photo);
+      console.log('canvasRef.current exists:', !!canvasRef.current);
       return;
     }
 
     const canvas = canvasRef.current;
+    console.log('Canvas dimensions:', canvas.width, 'x', canvas.height);
     
     try {
       console.log('Convertendo canvas para blob...');
+      
       // Converter canvas para blob
       const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob((blob) => {
@@ -219,6 +228,9 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           />
         </div>
         
+        {/* Canvas mantido sempre no DOM, mas escondido */}
+        <canvas ref={canvasRef} className="hidden" />
+        
         <div className="p-4 bg-black space-y-4 min-h-[140px]">
           <Card className="p-4">
             <Label htmlFor="legenda" className="text-sm font-medium">
@@ -265,6 +277,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           muted
           className="w-full h-full object-cover"
         />
+        
+        {/* Canvas mantido sempre no DOM, mas escondido */}
         <canvas ref={canvasRef} className="hidden" />
         
         {isLoading && (
