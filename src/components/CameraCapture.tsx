@@ -120,8 +120,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     }
 
     const canvas = canvasRef.current;
-    canvas.width = 1280;
-    canvas.height = 720;
+//    canvas.width = 1280;
+//    canvas.height = 720;
     console.log('Canvas dimensions:', canvas.width, 'x', canvas.height);
     
     try {
@@ -137,7 +137,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
             console.error('Falha ao criar blob');
             reject(new Error('Erro ao converter canvas para blob'));
           }
-        });
+        }, 'image/png');
       });
       console.log(blob);
       // Criar arquivo
