@@ -140,29 +140,29 @@ export const generatePDF = async (data: VistoriaData, fotos: CapturedPhoto[]) =>
         
         // Redimensionar imagem para caber no PDF
         const maxWidth = pageWidth - 60;
-        const maxHeight = 80;
+        const maxHeight = 100;
         
         let { width, height } = img;
         
-//        if (width > maxWidth) {
-//          height = (height * maxWidth) / width;
-//          width = maxWidth;
-//        }
-//        
-//        if (height > maxHeight) {
-//          width = (width * maxHeight) / height;
-//          height = maxHeight;
-//        }
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        
+        if (height > maxHeight) {
+          width = (width * maxHeight) / height;
+          height = maxHeight;
+        }
         
         canvas.width = width;
         canvas.height = height;
         ctx?.drawImage(img, 0, 0, width, height);
         
-        const imgData = canvas.toDataURL('image/jpeg', 1);
+        const imgData = canvas.toDataURL();
         
         checkPageBreak(height + 20);
         
-        pdf.addImage(imgData, 'JPEG', 30, currentY, width, height);
+        pdf.addImage(imgData, 'PNG', 30, currentY, width, height);
         currentY += height + 5;
         
         addText(`Foto ${i + 1}: ${foto.legenda}`, 30, 9);
