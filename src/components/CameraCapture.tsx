@@ -3,8 +3,8 @@ import React, { useRef, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Card } from '@/components/ui/card';
 import { Camera, X, RotateCcw } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
 
 interface CameraCaptureProps {
   onCapture: (photo: { file: File; preview: string; legenda: string }) => void;
@@ -21,47 +21,25 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
 
   const getMediaConstraints = (facing: 'user' | 'environment') => {
-    // Configurações específicas para iOS e outros dispositivos
-    const baseConstraints = {
+    return {
       video: {
-        facingMode: facing,
-        width: { ideal: 1920, max: 1920 },
-        height: { ideal: 1080, max: 1080 },
+        facingMode: { ideal: facing },
+        width: { ideal: 1280, max: 1920 },
+        height: { ideal: 720, max: 1080 },
         aspectRatio: { ideal: 16/9 }
       },
       audio: false
     };
-
-    // Para dispositivos iOS, adicionar configurações específicas
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    if (isIOS) {
-      return {
-        video: {
-          facingMode: { ideal: facing },
-          width: { ideal: 1280, max: 1920 },
-          height: { ideal: 720, max: 1080 },
-          aspectRatio: { ideal: 16/9 },
-          // Configurações específicas para iOS
-          frameRate: { ideal: 30, max: 30 }
-        },
-        audio: false
-      };
-    }
-
-    return baseConstraints;
   };
 
   const startCamera = useCallback(async (facing: 'user' | 'environment' = 'environment') => {
     setIsLoading(true);
     try {
-      // Parar stream anterior se existir
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
 
       const constraints = getMediaConstraints(facing);
-      console.log('Tentando acessar câmera com constraints:', constraints);
-
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       
       if (videoRef.current) {
@@ -71,58 +49,26 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       
       setStream(mediaStream);
       setFacingMode(facing);
-      
-      toast({
-        title: "Câmera ativada",
-        description: "Câmera pronta para capturar foto"
-      });
     } catch (error) {
       console.error('Erro ao acessar câmera:', error);
-      
-      let errorMessage = 'Erro ao acessar a câmera';
-      if (error instanceof Error) {
-        if (error.name === 'NotAllowedError') {
-          errorMessage = 'Permissão para acessar a câmera foi negada. Verifique as configurações do navegador.';
-        } else if (error.name === 'NotFoundError') {
-          errorMessage = 'Nenhuma câmera foi encontrada no dispositivo.';
-        } else if (error.name === 'NotSupportedError') {
-          errorMessage = 'Câmera não é suportada neste navegador.';
-        } else if (error.name === 'OverconstrainedError') {
-          errorMessage = 'Configurações da câmera não são suportadas. Tentando configuração alternativa...';
-          
-          // Tentar configuração mais simples
-          try {
-            const simpleConstraints = {
-              video: { facingMode: facing },
-              audio: false
-            };
-            const fallbackStream = await navigator.mediaDevices.getUserMedia(simpleConstraints);
-            
-            if (videoRef.current) {
-              videoRef.current.srcObject = fallbackStream;
-              videoRef.current.play();
-            }
-            
-            setStream(fallbackStream);
-            setFacingMode(facing);
-            
-            toast({
-              title: "Câmera ativada",
-              description: "Câmera ativada com configuração alternativa"
-            });
-            setIsLoading(false);
-            return;
-          } catch (fallbackError) {
-            console.error('Erro no fallback:', fallbackError);
-          }
+      // Tentativa com configuração simplificada
+      try {
+        const simpleConstraints = {
+          video: { facingMode: facing },
+          audio: false
+        };
+        const fallbackStream = await navigator.mediaDevices.getUserMedia(simpleConstraints);
+        
+        if (videoRef.current) {
+          videoRef.current.srcObject = fallbackStream;
+          videoRef.current.play();
         }
+        
+        setStream(fallbackStream);
+        setFacingMode(facing);
+      } catch (fallbackError) {
+        console.error('Erro no fallback:', fallbackError);
       }
-      
-      toast({
-        title: "Erro na câmera",
-        description: errorMessage,
-        variant: "destructive"
-      });
     } finally {
       setIsLoading(false);
     }
@@ -142,27 +88,17 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 
     if (!context) return;
 
-    // Definir tamanho do canvas baseado no vídeo
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-
-    // Desenhar o frame atual do vídeo no canvas
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // Converter para base64
     const photoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
     setPhoto(photoDataUrl);
-
-    toast({
-      title: "Foto capturada",
-      description: "Adicione uma legenda e confirme"
-    });
   }, []);
 
   const confirmPhoto = useCallback(() => {
     if (!photo) return;
 
-    // Converter base64 para Blob e depois para File
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -180,7 +116,6 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
         legenda: legenda || 'Foto da vistoria'
       });
 
-      // Limpar e fechar
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
@@ -212,8 +147,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 
   if (photo) {
     return (
-      <div className="fixed inset-0 bg-black z-50 flex flex-col">
-        <div className="flex justify-between items-center p-4 bg-black">
+      <div className="fixed inset-0 bg-black z-50 flex flex-col safe-area-inset">
+        <div className="flex justify-between items-center p-4 bg-black min-h-[60px]">
           <Button onClick={retakePhoto} variant="outline" size="sm">
             <RotateCcw className="w-4 h-4 mr-2" />
             Tirar Novamente
@@ -223,13 +158,19 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           </Button>
         </div>
         
-        <div className="flex-1 flex items-center justify-center p-4">
-          <img src={photo} alt="Foto capturada" className="max-w-full max-h-full object-contain" />
+        <div className="flex-1 flex items-center justify-center p-4 overflow-hidden">
+          <img 
+            src={photo} 
+            alt="Foto capturada" 
+            className="max-w-full max-h-full object-contain rounded-lg"
+          />
         </div>
         
-        <div className="p-4 bg-black space-y-4">
-          <div>
-            <Label htmlFor="legenda" className="text-white">Legenda da foto</Label>
+        <div className="p-4 bg-black space-y-4 min-h-[140px]">
+          <Card className="p-4">
+            <Label htmlFor="legenda" className="text-sm font-medium">
+              Legenda da foto
+            </Label>
             <Input
               id="legenda"
               value={legenda}
@@ -237,7 +178,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
               placeholder="Descreva a foto..."
               className="mt-2"
             />
-          </div>
+          </Card>
           <Button onClick={confirmPhoto} className="w-full" size="lg">
             Confirmar Foto
           </Button>
@@ -247,8 +188,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
   }
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
-      <div className="flex justify-between items-center p-4 bg-black">
+    <div className="fixed inset-0 bg-black z-50 flex flex-col safe-area-inset">
+      <div className="flex justify-between items-center p-4 bg-black min-h-[60px]">
         <Button onClick={switchCamera} variant="outline" size="sm" disabled={isLoading}>
           <RotateCcw className="w-4 h-4 mr-2" />
           Trocar Câmera
@@ -258,7 +199,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
         </Button>
       </div>
       
-      <div className="flex-1 relative">
+      <div className="flex-1 relative overflow-hidden">
         <video
           ref={videoRef}
           autoPlay
@@ -275,15 +216,14 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
         )}
       </div>
       
-      <div className="p-6 bg-black">
+      <div className="p-4 bg-black min-h-[100px] flex items-center justify-center">
         <Button 
           onClick={capturePhoto} 
           disabled={isLoading}
-          className="w-full" 
+          className="w-20 h-20 rounded-full p-0" 
           size="lg"
         >
-          <Camera className="w-6 h-6 mr-2" />
-          Capturar Foto
+          <Camera className="w-8 h-8" />
         </Button>
       </div>
     </div>

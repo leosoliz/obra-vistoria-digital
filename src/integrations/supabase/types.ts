@@ -164,21 +164,32 @@ export type Database = {
           created_at: string | null
           full_name: string
           id: string
+          location_id: string | null
           user_type: string
         }
         Insert: {
           created_at?: string | null
           full_name: string
           id: string
+          location_id?: string | null
           user_type: string
         }
         Update: {
           created_at?: string | null
           full_name?: string
           id?: string
+          location_id?: string | null
           user_type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "service_locations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       queue_customers: {
         Row: {
@@ -343,6 +354,10 @@ export type Database = {
     Functions: {
       get_next_queue_number: {
         Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      get_next_queue_number_by_location: {
+        Args: { location_uuid?: string }
         Returns: number
       }
       is_admin: {

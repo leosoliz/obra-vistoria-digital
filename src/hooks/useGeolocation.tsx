@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from 'react';
-import { toast } from '@/hooks/use-toast';
 
 interface GeolocationData {
   latitude: number | null;
@@ -66,11 +65,7 @@ export const useGeolocation = () => {
         error: null
       });
 
-      toast({
-        title: "Localização obtida",
-        description: `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`,
-      });
-
+      // Removido o toast que causava problemas no iOS
       return { latitude, longitude };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
@@ -80,12 +75,7 @@ export const useGeolocation = () => {
         error: errorMessage
       }));
 
-      toast({
-        title: "Erro de Geolocalização",
-        description: errorMessage,
-        variant: "destructive"
-      });
-
+      // Removido o toast de erro também para evitar interferência
       return null;
     }
   };

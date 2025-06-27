@@ -90,14 +90,8 @@ const Index = () => {
   // Efeito para preencher automaticamente os dados quando o usuário e perfil estiverem carregados
   useEffect(() => {
     if (profile && !profileLoading) {
-      // Preencher campos do fiscal automaticamente
       setValue('fiscalPrefeitura', profile.full_name);
       setValue('fiscalNome', profile.full_name);
-      
-      toast({
-        title: "Dados do fiscal preenchidos",
-        description: `Fiscal: ${profile.full_name}`,
-      });
     }
   }, [profile, profileLoading, setValue]);
 
@@ -241,8 +235,8 @@ const Index = () => {
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center space-x-4">
             <img 
-              src="/brasao.png" 
-              alt="Brasão da Prefeitura" 
+              src="/uploaded-image.png" 
+              alt="Logotipo da Prefeitura" 
               className="h-16 w-16 object-contain"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
