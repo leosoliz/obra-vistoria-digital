@@ -138,11 +138,17 @@ const Index = () => {
   };
 
   const handleCameraCapture = (photo: { file: File; preview: string; legenda: string }) => {
+    console.log('Recebendo foto capturada:', {
+      fileSize: photo.file.size,
+      fileName: photo.file.name,
+      legendaLength: photo.legenda.length
+    });
+    
     adicionarFoto(photo);
     setShowCamera(false);
     toast({
       title: "Foto adicionada",
-      description: "Foto capturada e adicionada ao relatório"
+      description: `Foto "${photo.legenda}" capturada com sucesso!`
     });
   };
 
@@ -550,7 +556,7 @@ const Index = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Camera className="h-5 w-5" />
-                Registro Fotográfico
+                Registro Fotográfico ({fotos.length}/5)
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -559,9 +565,10 @@ const Index = () => {
                 onClick={() => setShowCamera(true)}
                 className="w-full"
                 variant="outline"
+                disabled={fotos.length >= 5}
               >
                 <Camera className="h-4 w-4 mr-2" />
-                Capturar Foto
+                {fotos.length >= 5 ? 'Limite de 5 fotos atingido' : 'Capturar Foto'}
               </Button>
 
               {fotos.length > 0 && (
@@ -589,6 +596,12 @@ const Index = () => {
                   ))}
                 </div>
               )}
+
+              {fotos.length === 0 && (
+                <p className="text-sm text-gray-500 text-center py-4">
+                  Nenhuma foto adicionada. Capture pelo menos uma foto para finalizar a vistoria.
+                </p>
+              )}
             </CardContent>
           </Card>
 
@@ -615,7 +628,7 @@ const Index = () => {
           </div>
         </form>
 
-        {showCamera && (
+        {showCamera && fotos.length < 5 && (
           <CameraCapture
             onCapture={handleCameraCapture}
             onClose={() => setShowCamera(false)}

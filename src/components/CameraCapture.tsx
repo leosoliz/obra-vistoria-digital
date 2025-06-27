@@ -96,31 +96,52 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     setPhoto(photoDataUrl);
   }, []);
 
-  const confirmPhoto = useCallback(() => {
-    if (!photo) return;
+  const confirmPhoto = useCallback(async () => {
+    if (!photo || !canvasRef.current) return;
 
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    
+    try {
+      // Converter canvas para blob
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error('Erro ao converter canvas para blob'));
+          }
+        }, 'image/jpeg', 0.8);
+      });
 
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-
+      // Criar arquivo
       const file = new File([blob], `vistoria-${Date.now()}.jpg`, {
         type: 'image/jpeg',
         lastModified: Date.now()
       });
 
+      console.log('Foto confirmada, enviando para callback:', {
+        fileSize: file.size,
+        fileName: file.name,
+        legenda: legenda || 'Foto da vistoria'
+      });
+
+      // Chamar callback com os dados da foto
       onCapture({
         file,
         preview: photo,
         legenda: legenda || 'Foto da vistoria'
       });
 
+      // Parar stream da câmera
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
+
+      // Fechar modal
       onClose();
-    }, 'image/jpeg', 0.8);
+    } catch (error) {
+      console.error('Erro ao confirmar foto:', error);
+    }
   }, [photo, legenda, onCapture, onClose, stream]);
 
   const retakePhoto = useCallback(() => {
@@ -191,7 +212,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     <div className="fixed inset-0 bg-black z-50 flex flex-col safe-area-inset">
       <div className="flex justify-between items-center p-4 bg-black min-h-[60px]">
         <Button onClick={switchCamera} variant="outline" size="sm" disabled={isLoading}>
-          <RotateCcw className="w-4 h-4 mr-2" />
+          <RotateCcw className="w-4 w-4 mr-2" />
           Trocar Câmera
         </Button>
         <Button onClick={handleClose} variant="outline" size="sm">
