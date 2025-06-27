@@ -140,7 +140,7 @@ export const generatePDF = async (data: VistoriaData, fotos: CapturedPhoto[]) =>
         
         // Redimensionar imagem para caber no PDF
         const maxWidth = pageWidth - 60;
-        const maxHeight = 100;
+        const maxHeight = 80;
         
         let { width, height } = img;
         
