@@ -191,7 +191,29 @@ const Index = () => {
     if (vistoriaId) {
       // Gerar PDF
       try {
-        await generatePDF(data, fotos);
+        // Ensure required fields are present for PDF generation
+        const pdfData = {
+          nomeObra: data.nomeObra,
+          localizacao: data.localizacao,
+          numeroContrato: data.numeroContrato,
+          empresaResponsavel: data.empresaResponsavel,
+          engenheiroResponsavel: data.engenheiroResponsavel,
+          fiscalPrefeitura: data.fiscalPrefeitura,
+          dataVistoria: data.dataVistoria,
+          horaVistoria: data.horaVistoria,
+          objetivoVistoria: data.objetivoVistoria,
+          outroObjetivo: data.outroObjetivo,
+          descricaoAtividades: data.descricaoAtividades,
+          situacaoObra: data.situacaoObra,
+          detalhesPendencias: data.detalhesPendencias,
+          recomendacoes: data.recomendacoes,
+          fiscalNome: data.fiscalNome,
+          fiscalMatricula: data.fiscalMatricula,
+          representanteNome: data.representanteNome,
+          representanteCargo: data.representanteCargo,
+        };
+
+        await generatePDF(pdfData, fotos);
 
         toast({
           title: "Sucesso!",
