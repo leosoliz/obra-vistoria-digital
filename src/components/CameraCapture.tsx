@@ -40,6 +40,26 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+function base64ToFile(base64: string, filename: string): File {
+  const arr: string[] = base64.split(',');
+  const mimeMatch = arr[0].match(/:(.*?);/);
+
+  if (!mimeMatch) {
+    throw new Error("Invalid base64 string");
+  }
+
+  const mime = mimeMatch[1];
+  const bstr = atob(arr[1]);
+  const n = bstr.length;
+  const u8arr = new Uint8Array(n);
+
+  for (let i = 0; i < n; i++) {
+    u8arr[i] = bstr.charCodeAt(i);
+  }
+
+  return new File([u8arr], filename, { type: mime });
+}
+
 export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -154,25 +174,10 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     console.log('Canvas dimensions:', canvas.width, 'x', canvas.height);
 
     try {
-      console.log('Convertendo canvas para blob...');
+      console.log('Convertendo base64 para file...');
       
-      // Converter canvas para blob
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob((blob) => {
-          if (blob) {
-            console.log('Blob criado com sucesso, tamanho:', blob.size);
-            resolve(blob);
-          } else {
-            console.error('Falha ao criar blob');
-            reject(new Error('Erro ao converter canvas para blob'));
-          }
-        }, 'image/png');
-      });
-      console.log('Imagem Blob: ', blobToBase64(blob));
       // Criar arquivo
-      const file = new File([blob], `vistoria-${Date.now()}.png`, {
-        type: blob.type
-      });
+      const file = base64ToFile(photo, `vistoria-${Date.now()}.png`);
       console.log('Imagem....', await fileToBase64(file));
       console.log('Arquivo criado:', {
         name: file.name,
