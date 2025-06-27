@@ -11,6 +11,17 @@ interface CameraCaptureProps {
   onClose: () => void;
 }
 
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+
+    reader.readAsDataURL(blob);
+  });
+}
+
 export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -119,12 +130,11 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       console.log('canvasRef.current exists:', !!canvasRef.current);
       return;
     }
-    console.log(photo);
     const canvas = canvasRef.current;
 //    canvas.width = 1280;
 //    canvas.height = 720;
     console.log('Canvas dimensions:', canvas.width, 'x', canvas.height);
-    console.log(canvas);
+
     try {
       console.log('Convertendo canvas para blob...');
       
@@ -140,7 +150,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           }
         }, 'image/png');
       });
-      console.log(blob);
+      console.log(blobToBase64(blob));
       // Criar arquivo
       const file = new File([blob], `vistoria-${Date.now()}.png`, {
         type: 'image/png',
