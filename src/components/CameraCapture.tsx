@@ -174,8 +174,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
         type: 'image/png',
         lastModified: Date.now()
       });
-      const img = await fileToBase64(file);
-      console.log('Será.....', img);
+      
       console.log('Arquivo criado:', {
         name: file.name,
         size: file.size,
