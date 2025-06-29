@@ -1,352 +1,229 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { 
-  Calendar, 
-  Camera, 
-  MapPin, 
-  Clock, 
-  User, 
-  Building,
-  FileText,
-  CheckCircle,
-  X,
-  Loader2,
-  Navigation
-} from 'lucide-react';
-
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Separator } from '@/components/ui/separator';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from '@/hooks/use-toast';
-
-import { useAuth } from '@/hooks/useAuth';
-import { useVistoria } from '@/hooks/useVistoria';
-import { useGeolocation } from '@/hooks/useGeolocation';
-import { useUserProfile } from '@/hooks/useUserProfile';
-import { CameraCapture } from '@/components/CameraCapture';
-import { generatePDF } from '@/utils/pdfGenerator';
-
-const vistoriaSchema = z.object({
-  nomeObra: z.string().min(1, 'Nome da obra é obrigatório'),
-  localizacao: z.string().min(1, 'Localização é obrigatória'),
-  numeroContrato: z.string().optional(),
-  empresaResponsavel: z.string().optional(),
-  engenheiroResponsavel: z.string().optional(),
-  fiscalPrefeitura: z.string().optional(),
-  dataVistoria: z.string().min(1, 'Data da vistoria é obrigatória'),
-  horaVistoria: z.string().min(1, 'Hora da vistoria é obrigatória'),
-  objetivoVistoria: z.array(z.string()).min(1, 'Selecione pelo menos um objetivo'),
-  outroObjetivo: z.string().optional(),
-  descricaoAtividades: z.string().min(1, 'Descrição das atividades é obrigatória'),
-  situacaoObra: z.string().min(1, 'Situação da obra é obrigatória'),
-  detalhesPendencias: z.string().optional(),
-  recomendacoes: z.string().optional(),
-  fiscalNome: z.string().optional(),
-  fiscalMatricula: z.string().optional(),
-  representanteNome: z.string().optional(),
-  representanteCargo: z.string().optional(),
-});
-
-type VistoriaFormData = z.infer<typeof vistoriaSchema>;
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { useVistoria } from "@/hooks/useVistoria";
+import { useAutocomplete } from "@/hooks/useAutocomplete";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { AutocompleteInput } from "@/components/AutocompleteInput";
+import CameraCapture from "@/components/CameraCapture";
+import { ArrowLeft, MapPin, Camera, FileText, Users, AlertCircle } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
-  const { profile, isLoading: profileLoading } = useUserProfile();
-  const { salvarVistoria, fotos, adicionarFoto, removerFoto, isLoading } = useVistoria();
-  const { latitude, longitude, isLoading: geoLoading, requestLocation, formatLocationString } = useGeolocation();
+  const { user } = useAuth();
+  const { salvarVistoria, fotos, isLoading: isSaving } = useVistoria();
+  const { autocompleteData } = useAutocomplete();
+  const { coordinates, error: locationError, getCurrentLocation } = useGeolocation();
+
+  const [nomeObra, setNomeObra] = useState("");
+  const [localizacao, setLocalizacao] = useState("");
+  const [numeroContrato, setNumeroContrato] = useState("");
+  const [empresaResponsavel, setEmpresaResponsavel] = useState("");
+  const [engenheiroResponsavel, setEngenheiroResponsavel] = useState("");
+  const [fiscalPrefeitura, setFiscalPrefeitura] = useState("");
+  const [dataVistoria, setDataVistoria] = useState("");
+  const [horaVistoria, setHoraVistoria] = useState("");
   
+  const [objetivoVistoria, setObjetivoVistoria] = useState<string[]>([]);
+  const [outroObjetivo, setOutroObjetivo] = useState("");
+  
+  const [descricaoAtividades, setDescricaoAtividades] = useState("");
+  
+  const [situacaoObra, setSituacaoObra] = useState("");
+  const [detalhesPendencias, setDetalhesPendencias] = useState("");
+  
+  const [recomendacoes, setRecomendacoes] = useState("");
+  
+  const [fiscalNome, setFiscalNome] = useState("");
+  const [fiscalMatricula, setFiscalMatricula] = useState("");
+  const [representanteNome, setRepresentanteNome] = useState("");
+  const [representanteCargo, setRepresentanteCargo] = useState("");
+
   const [showCamera, setShowCamera] = useState(false);
-  const [currentLocation, setCurrentLocation] = useState<string>('');
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    setValue,
-    watch,
-    reset
-  } = useForm<VistoriaFormData>({
-    resolver: zodResolver(vistoriaSchema),
-    defaultValues: {
-      objetivoVistoria: [],
-      dataVistoria: format(new Date(), 'yyyy-MM-dd'),
-      horaVistoria: format(new Date(), 'HH:mm'),
-    }
-  });
-
-  const watchedObjetivos = watch('objetivoVistoria');
 
   useEffect(() => {
-    if (profile && !profileLoading) {
-      setValue('fiscalPrefeitura', profile.full_name);
-      setValue('fiscalNome', profile.full_name);
-    }
-  }, [profile, profileLoading, setValue]);
-
-  useEffect(() => {
-    const getInitialLocation = async () => {
-      const location = await requestLocation();
-      if (location) {
-        const locationString = formatLocationString(location.latitude, location.longitude);
-        setCurrentLocation(locationString);
-        setValue('localizacao', locationString);
-      }
-    };
-
-    getInitialLocation();
-  }, [requestLocation, formatLocationString, setValue]);
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/auth');
-    }
-  }, [user, authLoading, navigate]);
-
-  if (authLoading || profileLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const currentTime = now.toTimeString().slice(0, 5);
+    
+    setDataVistoria(today);
+    setHoraVistoria(currentTime);
+    
+    getCurrentLocation();
+  }, [getCurrentLocation]);
 
   const handleObjetivoChange = (objetivo: string, checked: boolean) => {
-    const currentObjetivos = watchedObjetivos || [];
     if (checked) {
-      setValue('objetivoVistoria', [...currentObjetivos, objetivo]);
+      setObjetivoVistoria([...objetivoVistoria, objetivo]);
     } else {
-      setValue('objetivoVistoria', currentObjetivos.filter(o => o !== objetivo));
+      setObjetivoVistoria(objetivoVistoria.filter(obj => obj !== objetivo));
     }
   };
 
-  const handleCameraCapture = (photo: { file: File; preview: string; legenda: string }) => {
-    console.log('Index.tsx - Recebendo foto capturada:', {
-      fileSize: photo.file.size,
-      fileName: photo.file.name,
-      legendaLength: photo.legenda.length,
-      previewLength: photo.preview.length
-    });
-    
-    console.log('Index.tsx - Adicionando foto ao estado...');
-    adicionarFoto(photo);
-    
-    console.log('Index.tsx - Fechando modal da câmara...');
-    setShowCamera(false);
-    
-    console.log('Index.tsx - Mostrando toast de sucesso...');
-    toast({
-      title: "Foto adicionada",
-      description: `Foto "${photo.legenda}" capturada com sucesso!`
-    });
-    
-    console.log('Index.tsx - Processo de captura concluído');
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  const handleGetLocation = async () => {
-    const location = await requestLocation();
-    if (location) {
-      const locationString = formatLocationString(location.latitude, location.longitude);
-      setCurrentLocation(locationString);
-      setValue('localizacao', locationString);
-    }
-  };
-
-  const onSubmit = async (data: VistoriaFormData) => {
-    if (fotos.length === 0) {
+    if (!nomeObra || !localizacao || !descricaoAtividades || !situacaoObra) {
       toast({
-        title: "Atenção",
-        description: "Adicione pelo menos uma foto antes de finalizar",
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos obrigatórios.",
         variant: "destructive"
       });
       return;
     }
 
-    const vistoriaId = await salvarVistoria({
-      nomeObra: data.nomeObra,
-      localizacao: data.localizacao,
-      numeroContrato: data.numeroContrato || '',
-      empresaResponsavel: data.empresaResponsavel || '',
-      engenheiroResponsavel: data.engenheiroResponsavel || '',
-      fiscalPrefeitura: data.fiscalPrefeitura || '',
-      dataVistoria: data.dataVistoria,
-      horaVistoria: data.horaVistoria,
-      objetivoVistoria: data.objetivoVistoria,
-      outroObjetivo: data.outroObjetivo || '',
-      descricaoAtividades: data.descricaoAtividades,
-      situacaoObra: data.situacaoObra,
-      detalhesPendencias: data.detalhesPendencias || '',
-      recomendacoes: data.recomendacoes || '',
-      fiscalNome: data.fiscalNome || '',
-      fiscalMatricula: data.fiscalMatricula || '',
-      representanteNome: data.representanteNome || '',
-      representanteCargo: data.representanteCargo || '',
-      latitude: latitude || 0,
-      longitude: longitude || 0
-    });
+    if (objetivoVistoria.length === 0) {
+      toast({
+        title: "Objetivo obrigatório",
+        description: "Por favor, selecione pelo menos um objetivo da vistoria.",
+        variant: "destructive"
+      });
+      return;
+    }
 
-    if (vistoriaId) {
-      // Gerar PDF
-      try {
-        // Ensure required fields are present for PDF generation
-        const pdfData = {
-          nomeObra: data.nomeObra,
-          localizacao: data.localizacao,
-          numeroContrato: data.numeroContrato,
-          empresaResponsavel: data.empresaResponsavel,
-          engenheiroResponsavel: data.engenheiroResponsavel,
-          fiscalPrefeitura: data.fiscalPrefeitura,
-          dataVistoria: data.dataVistoria,
-          horaVistoria: data.horaVistoria,
-          objetivoVistoria: data.objetivoVistoria,
-          outroObjetivo: data.outroObjetivo,
-          descricaoAtividades: data.descricaoAtividades,
-          situacaoObra: data.situacaoObra,
-          detalhesPendencias: data.detalhesPendencias,
-          recomendacoes: data.recomendacoes,
-          fiscalNome: data.fiscalNome,
-          fiscalMatricula: data.fiscalMatricula,
-          representanteNome: data.representanteNome,
-          representanteCargo: data.representanteCargo,
-        };
+    const vistoriaData = {
+      nomeObra,
+      localizacao,
+      numeroContrato,
+      empresaResponsavel,
+      engenheiroResponsavel,
+      fiscalPrefeitura,
+      dataVistoria,
+      horaVistoria,
+      objetivoVistoria,
+      outroObjetivo,
+      descricaoAtividades,
+      situacaoObra,
+      detalhesPendencias,
+      recomendacoes,
+      fiscalNome,
+      fiscalMatricula,
+      representanteNome,
+      representanteCargo,
+      latitude: coordinates?.latitude,
+      longitude: coordinates?.longitude
+    };
 
-        await generatePDF(pdfData, fotos);
-
-        toast({
-          title: "Sucesso!",
-          description: "Relatório salvo e PDF gerado com sucesso!"
-        });
-
-        // Limpar formulário
-        reset();
-        setCurrentLocation('');
-      } catch (error) {
-        console.error('Erro ao gerar PDF:', error);
-        toast({
-          title: "PDF não gerado",
-          description: "Relatório salvo, mas houve erro na geração do PDF",
-          variant: "destructive"
-        });
-      }
+    const result = await salvarVistoria(vistoriaData);
+    if (result) {
+      // Navegar de volta para a lista de vistorias
+      navigate('/vistorias');
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header com Logotipo */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center space-x-4">
-            <img 
-              src="/uploaded-image.png" 
-              alt="Logotipo da Prefeitura" 
-              className="h-16 w-16 object-contain"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-              }}
-            />
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-4xl mx-auto px-6 py-4">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              onClick={() => navigate('/vistorias')}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Voltar
+            </Button>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                Sistema de Vistoria de Obras
+                Nova Vistoria de Obra
               </h1>
-              <p className="text-sm text-gray-600">
-                Prefeitura Municipal - Fiscal: {profile?.full_name || 'Carregando...'}
+              <p className="text-gray-600 mt-1">
+                Preencha os dados da vistoria
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto p-4 space-y-6">
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <div className="max-w-4xl mx-auto p-6">
+        <form onSubmit={handleSubmit} className="space-y-8">
           {/* Identificação da Obra */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Building className="h-5 w-5" />
+                <FileText className="w-5 h-5" />
                 Identificação da Obra
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="nomeObra">Nome da Obra *</Label>
-                <Input
-                  id="nomeObra"
-                  {...register('nomeObra')}
-                  className={errors.nomeObra ? 'border-red-500' : ''}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <AutocompleteInput
+                  label="Nome da Obra"
+                  value={nomeObra}
+                  onChange={setNomeObra}
+                  suggestions={autocompleteData.nomes_obra}
+                  placeholder="Digite o nome da obra"
+                  required
                 />
-                {errors.nomeObra && (
-                  <span className="text-red-500 text-sm">{errors.nomeObra.message}</span>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="localizacao">Localização *</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="localizacao"
-                    {...register('localizacao')}
-                    className={errors.localizacao ? 'border-red-500' : ''}
-                    value={currentLocation}
-                    onChange={(e) => setCurrentLocation(e.target.value)}
-                  />
-                  <Button
-                    type="button"
-                    onClick={handleGetLocation}
-                    disabled={geoLoading}
-                    variant="outline"
-                    size="sm"
-                  >
-                    {geoLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Navigation className="h-4 w-4" />
+                
+                <div>
+                  <Label htmlFor="localizacao">Localização *</Label>
+                  <div className="relative">
+                    <Input
+                      id="localizacao"
+                      value={localizacao}
+                      onChange={(e) => setLocalizacao(e.target.value)}
+                      placeholder="Endereço da obra"
+                      required
+                    />
+                    {coordinates && (
+                      <MapPin className="absolute right-3 top-3 w-4 h-4 text-green-600" />
                     )}
-                  </Button>
-                </div>
-                {errors.localizacao && (
-                  <span className="text-red-500 text-sm">{errors.localizacao.message}</span>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="numeroContrato">Número do Contrato</Label>
-                  <Input id="numeroContrato" {...register('numeroContrato')} />
-                </div>
-                <div>
-                  <Label htmlFor="empresaResponsavel">Empresa Responsável</Label>
-                  <Input id="empresaResponsavel" {...register('empresaResponsavel')} />
+                  </div>
+                  {locationError && (
+                    <p className="text-sm text-amber-600 mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      Localização não disponível
+                    </p>
+                  )}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="engenheiroResponsavel">Engenheiro Responsável</Label>
-                  <Input id="engenheiroResponsavel" {...register('engenheiroResponsavel')} />
-                </div>
+                <AutocompleteInput
+                  label="Número do Contrato"
+                  value={numeroContrato}
+                  onChange={setNumeroContrato}
+                  suggestions={autocompleteData.numeros_contrato}
+                  placeholder="Número do contrato"
+                />
+
+                <AutocompleteInput
+                  label="Empresa Responsável"
+                  value={empresaResponsavel}
+                  onChange={setEmpresaResponsavel}
+                  suggestions={autocompleteData.empresas_responsavel}
+                  placeholder="Nome da empresa"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <AutocompleteInput
+                  label="Engenheiro Responsável"
+                  value={engenheiroResponsavel}
+                  onChange={setEngenheiroResponsavel}
+                  suggestions={autocompleteData.engenheiros_responsavel}
+                  placeholder="Nome do engenheiro"
+                />
+
                 <div>
                   <Label htmlFor="fiscalPrefeitura">Fiscal da Prefeitura</Label>
-                  <Input 
-                    id="fiscalPrefeitura" 
-                    {...register('fiscalPrefeitura')} 
-                    readOnly
-                    className="bg-gray-100"
+                  <Input
+                    id="fiscalPrefeitura"
+                    value={fiscalPrefeitura}
+                    onChange={(e) => setFiscalPrefeitura(e.target.value)}
+                    placeholder="Nome do fiscal"
                   />
                 </div>
               </div>
@@ -357,298 +234,249 @@ const Index = () => {
                   <Input
                     id="dataVistoria"
                     type="date"
-                    {...register('dataVistoria')}
-                    className={errors.dataVistoria ? 'border-red-500' : ''}
+                    value={dataVistoria}
+                    onChange={(e) => setDataVistoria(e.target.value)}
+                    required
                   />
-                  {errors.dataVistoria && (
-                    <span className="text-red-500 text-sm">{errors.dataVistoria.message}</span>
-                  )}
                 </div>
+
                 <div>
                   <Label htmlFor="horaVistoria">Hora da Vistoria *</Label>
                   <Input
                     id="horaVistoria"
                     type="time"
-                    {...register('horaVistoria')}
-                    className={errors.horaVistoria ? 'border-red-500' : ''}
+                    value={horaVistoria}
+                    onChange={(e) => setHoraVistoria(e.target.value)}
+                    required
                   />
-                  {errors.horaVistoria && (
-                    <span className="text-red-500 text-sm">{errors.horaVistoria.message}</span>
-                  )}
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Objetivos da Vistoria */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Objetivos da Vistoria *
-              </CardTitle>
+              <CardTitle>Objetivos da Vistoria *</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="objetivoInicioObra"
-                    checked={watchedObjetivos?.includes('Início de Obra') || false}
-                    onCheckedChange={(checked) => handleObjetivoChange('Início de Obra', Boolean(checked))}
-                  />
-                  <Label htmlFor="objetivoInicioObra">Início de Obra</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="objetivoVistoriaRotina"
-                    checked={watchedObjetivos?.includes('Vistoria de Rotina') || false}
-                    onCheckedChange={(checked) => handleObjetivoChange('Vistoria de Rotina', Boolean(checked))}
-                  />
-                  <Label htmlFor="objetivoVistoriaRotina">Vistoria de Rotina</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="objetivoMedicao"
-                    checked={watchedObjetivos?.includes('Medição') || false}
-                    onCheckedChange={(checked) => handleObjetivoChange('Medição', Boolean(checked))}
-                  />
-                  <Label htmlFor="objetivoMedicao">Medição</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="objetivoVistoriaTecnica"
-                    checked={watchedObjetivos?.includes('Vistoria Técnica/Análise de Conformidade') || false}
-                    onCheckedChange={(checked) => handleObjetivoChange('Vistoria Técnica/Análise de Conformidade', Boolean(checked))}
-                  />
-                  <Label htmlFor="objetivoVistoriaTecnica">Vistoria Técnica/Análise de Conformidade</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="objetivoEncerramento"
-                    checked={watchedObjetivos?.includes('Encerramento/Entrega da Obra') || false}
-                    onCheckedChange={(checked) => handleObjetivoChange('Encerramento/Entrega da Obra', Boolean(checked))}
-                  />
-                  <Label htmlFor="objetivoEncerramento">Encerramento/Entrega da Obra</Label>
-                </div>
+            <CardContent>
+              <div className="space-y-3">
+                {[
+                  "Início de Obra",
+                  "Vistoria de Rotina", 
+                  "Medição",
+                  "Vistoria Técnica/Análise de Conformidade",
+                  "Encerramento/Entrega da Obra"
+                ].map((objetivo) => (
+                  <div key={objetivo} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={objetivo}
+                      checked={objetivoVistoria.includes(objetivo)}
+                      onCheckedChange={(checked) => handleObjetivoChange(objetivo, checked as boolean)}
+                    />
+                    <Label htmlFor={objetivo}>{objetivo}</Label>
+                  </div>
+                ))}
               </div>
 
-              <div>
-                <Label htmlFor="outroObjetivo">Outros Objetivos</Label>
-                <Input id="outroObjetivo" {...register('outroObjetivo')} />
+              <div className="mt-4">
+                <Label htmlFor="outroObjetivo">Outro objetivo (especificar)</Label>
+                <Input
+                  id="outroObjetivo"
+                  value={outroObjetivo}
+                  onChange={(e) => setOutroObjetivo(e.target.value)}
+                  placeholder="Especifique outro objetivo"
+                />
               </div>
-              {errors.objetivoVistoria && (
-                <span className="text-red-500 text-sm">{errors.objetivoVistoria.message}</span>
-              )}
             </CardContent>
           </Card>
 
-          {/* Descrição das Atividades */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Descrição das Atividades *
-              </CardTitle>
+              <CardTitle>Descrição das Atividades</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent>
               <div>
-                <Label htmlFor="descricaoAtividades">Descrição Detalhada</Label>
+                <Label htmlFor="descricaoAtividades">Atividades Executadas *</Label>
                 <Textarea
                   id="descricaoAtividades"
-                  {...register('descricaoAtividades')}
-                  className={errors.descricaoAtividades ? 'border-red-500' : ''}
+                  value={descricaoAtividades}
+                  onChange={(e) => setDescricaoAtividades(e.target.value)}
+                  placeholder="Descreva as atividades executadas na obra..."
+                  className="min-h-[100px]"
+                  required
                 />
-                {errors.descricaoAtividades && (
-                  <span className="text-red-500 text-sm">{errors.descricaoAtividades.message}</span>
-                )}
               </div>
             </CardContent>
           </Card>
 
-          {/* Situação da Obra */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5" />
-                Situação da Obra *
-              </CardTitle>
+              <CardTitle>Situação da Obra</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <RadioGroup {...register('situacaoObra')} className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Em Conformidade" id="situacaoConformidade" />
-                  <Label htmlFor="situacaoConformidade">Em Conformidade</Label>
+              <div>
+                <Label htmlFor="situacaoObra">Situação Encontrada *</Label>
+                <Select value={situacaoObra} onValueChange={setSituacaoObra} required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a situação da obra" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Em Conformidade">Em Conformidade</SelectItem>
+                    <SelectItem value="Com Pendências">Com Pendências</SelectItem>
+                    <SelectItem value="Irregularidades Graves">Irregularidades Graves</SelectItem>
+                    <SelectItem value="Paralisada">Paralisada</SelectItem>
+                    <SelectItem value="Finalizada">Finalizada</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {(situacaoObra === "Com Pendências" || situacaoObra === "Irregularidades Graves") && (
+                <div>
+                  <Label htmlFor="detalhesPendencias">Detalhes das Pendências/Irregularidades</Label>
+                  <Textarea
+                    id="detalhesPendencias"
+                    value={detalhesPendencias}
+                    onChange={(e) => setDetalhesPendencias(e.target.value)}
+                    placeholder="Descreva as pendências ou irregularidades encontradas..."
+                    className="min-h-[80px]"
+                  />
                 </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Com Pendências" id="situacaoPendencias" />
-                  <Label htmlFor="situacaoPendencias">Com Pendências</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Irregularidades Graves" id="situacaoIrregularidades" />
-                  <Label htmlFor="situacaoIrregularidades">Irregularidades Graves</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Paralisada" id="situacaoParalisada" />
-                  <Label htmlFor="situacaoParalisada">Paralisada</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Finalizada" id="situacaoFinalizada" />
-                  <Label htmlFor="situacaoFinalizada">Finalizada</Label>
-                </div>
-              </RadioGroup>
-              {errors.situacaoObra && (
-                <span className="text-red-500 text-sm">{errors.situacaoObra.message}</span>
               )}
-
-              <div>
-                <Label htmlFor="detalhesPendencias">Detalhes das Pendências</Label>
-                <Textarea id="detalhesPendencias" {...register('detalhesPendencias')} />
-              </div>
             </CardContent>
           </Card>
 
-          {/* Recomendações */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Recomendações
-              </CardTitle>
+              <CardTitle>Recomendações</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent>
               <div>
-                <Label htmlFor="recomendacoes">Recomendações e Providências</Label>
-                <Textarea id="recomendacoes" {...register('recomendacoes')} />
+                <Label htmlFor="recomendacoes">Recomendações e Observações</Label>
+                <Textarea
+                  id="recomendacoes"
+                  value={recomendacoes}
+                  onChange={(e) => setRecomendacoes(e.target.value)}
+                  placeholder="Recomendações técnicas, prazos, observações gerais..."
+                  className="min-h-[80px]"
+                />
               </div>
             </CardContent>
           </Card>
 
-          {/* Assinaturas */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
+                <Users className="w-5 h-5" />
                 Assinaturas
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="fiscalNome">Fiscal da Prefeitura</Label>
-                  <Input id="fiscalNome" {...register('fiscalNome')} />
+                  <Label htmlFor="fiscalNome">Nome do Fiscal</Label>
+                  <Input
+                    id="fiscalNome"
+                    value={fiscalNome}
+                    onChange={(e) => setFiscalNome(e.target.value)}
+                    placeholder="Nome completo do fiscal"
+                  />
                 </div>
+
                 <div>
                   <Label htmlFor="fiscalMatricula">Matrícula do Fiscal</Label>
-                  <Input id="fiscalMatricula" {...register('fiscalMatricula')} />
+                  <Input
+                    id="fiscalMatricula"
+                    value={fiscalMatricula}
+                    onChange={(e) => setFiscalMatricula(e.target.value)}
+                    placeholder="Matrícula funcional"
+                  />
                 </div>
               </div>
 
+              <Separator />
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="representanteNome">Representante da Obra</Label>
-                  <Input id="representanteNome" {...register('representanteNome')} />
-                </div>
-                <div>
-                  <Label htmlFor="representanteCargo">Cargo do Representante</Label>
-                  <Input id="representanteCargo" {...register('representanteCargo')} />
-                </div>
+                <AutocompleteInput
+                  label="Nome do Representante da Obra"
+                  value={representanteNome}
+                  onChange={setRepresentanteNome}
+                  suggestions={autocompleteData.representantes_nome}
+                  placeholder="Nome do representante"
+                />
+
+                <AutocompleteInput
+                  label="Cargo do Representante"
+                  value={representanteCargo}
+                  onChange={setRepresentanteCargo}
+                  suggestions={autocompleteData.representantes_cargo}
+                  placeholder="Cargo do representante"
+                />
               </div>
             </CardContent>
           </Card>
 
-          {/* Registro Fotográfico */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Camera className="h-5 w-5" />
-                Registro Fotográfico ({fotos.length}/5)
+                <Camera className="w-5 h-5" />
+                Registro Fotográfico
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <Button
-                type="button"
-                onClick={() => {
-                  console.log('Botão capturar foto clicado, abrindo câmera...');
-                  setShowCamera(true);
-                }}
-                className="w-full"
-                variant="outline"
-                disabled={fotos.length >= 5}
-              >
-                <Camera className="h-4 w-4 mr-2" />
-                {fotos.length >= 5 ? 'Limite de 5 fotos atingido' : 'Capturar Foto'}
-              </Button>
+            <CardContent>
+              <div className="space-y-4">
+                <Button
+                  type="button"
+                  onClick={() => setShowCamera(true)}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <Camera className="w-4 h-4 mr-2" />
+                  Capturar Foto
+                </Button>
 
-              {fotos.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {fotos.map((foto, index) => (
-                    <div key={index} className="relative">
-                      <img
-                        src={foto.preview}
-                        alt={foto.legenda}
-                        className="w-full h-32 object-cover rounded-lg"
-                      />
-                      <Button
-                        type="button"
-                        onClick={() => {
-                          console.log(`Removendo foto ${index}...`);
-                          removerFoto(index);
-                        }}
-                        size="sm"
-                        variant="destructive"
-                        className="absolute top-2 right-2 h-6 w-6 p-0"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                      <p className="text-sm text-gray-600 mt-1 truncate">
-                        {foto.legenda}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {fotos.length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-4">
-                  Nenhuma foto adicionada. Capture pelo menos uma foto para finalizar a vistoria.
-                </p>
-              )}
+                {fotos.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {fotos.map((foto, index) => (
+                      <div key={index} className="space-y-2">
+                        <img
+                          src={foto.preview}
+                          alt={`Foto ${index + 1}`}
+                          className="w-full h-24 object-cover rounded border"
+                        />
+                        <p className="text-xs text-gray-600 truncate">
+                          {foto.legenda || `Foto ${index + 1}`}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
 
-          {/* Botão de Finalizar */}
-          <div className="flex gap-4">
+          <div className="flex gap-4 pt-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/vistorias')}
+              className="flex-1"
+            >
+              Cancelar
+            </Button>
             <Button
               type="submit"
-              disabled={isLoading}
-              className="flex-1"
-              size="lg"
+              disabled={isSaving}
+              className="flex-1 bg-blue-600 hover:bg-blue-700"
             >
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Finalizar Vistoria
-                </>
-              )}
+              {isSaving ? "Salvando..." : "Finalizar Vistoria"}
             </Button>
           </div>
         </form>
-
-        {showCamera && fotos.length < 5 && (
-          <CameraCapture
-            onCapture={handleCameraCapture}
-            onClose={() => {
-              console.log('Fechando câmera sem capturar foto...');
-              setShowCamera(false);
-            }}
-          />
-        )}
       </div>
+
+      {showCamera && (
+        <CameraCapture onClose={() => setShowCamera(false)} />
+      )}
     </div>
   );
 };
