@@ -35,7 +35,7 @@ const Auth = () => {
           description: "Bem-vindo ao Sistema de Vistoria de Obras.",
         });
         
-        navigate('/');
+        navigate('/vistorias');
       } else {
         const { error } = await supabase.auth.signUp({
           email,
