@@ -19,7 +19,7 @@ const VistoriasList = () => {
   // Recarregar dados toda vez que a tela é acessada
   useEffect(() => {
     refetch();
-  }, [refetch]);
+  }, []);
 
   const handleLogout = async () => {
     const { supabase } = await import('@/integrations/supabase/client');
