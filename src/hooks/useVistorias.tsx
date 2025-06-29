@@ -14,6 +14,11 @@ interface VistoriaListItem {
   empresa_responsavel: string | null;
   engenheiro_responsavel: string | null;
   numero_contrato: string | null;
+  situacao_conformidade: boolean | null;
+  situacao_irregularidades: boolean | null;
+  situacao_pendencias: boolean | null;
+  situacao_paralisada: boolean | null;
+  situacao_finalizada: boolean | null;
 }
 
 export const useVistorias = () => {
@@ -37,7 +42,12 @@ export const useVistorias = () => {
           created_at,
           empresa_responsavel,
           engenheiro_responsavel,
-          numero_contrato
+          numero_contrato,
+          situacao_conformidade,
+          situacao_irregularidades,
+          situacao_pendencias,
+          situacao_paralisada,
+          situacao_finalizada
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });

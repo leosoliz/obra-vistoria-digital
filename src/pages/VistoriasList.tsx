@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useVistorias } from '@/hooks/useVistorias';
@@ -14,7 +14,12 @@ import { ptBR } from 'date-fns/locale';
 const VistoriasList = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { vistorias, isLoading } = useVistorias();
+  const { vistorias, isLoading, refetch } = useVistorias();
+
+  // Recarregar dados toda vez que a tela é acessada
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   const handleLogout = async () => {
     const { supabase } = await import('@/integrations/supabase/client');
@@ -22,14 +27,49 @@ const VistoriasList = () => {
     navigate('/auth');
   };
 
-  const getStatusColor = (status: string) => {
+  const getVistoriaStatus = (vistoria: any) => {
+    // Determinar status baseado na situação da obra
+    if (vistoria.situacao_finalizada) return 'finalizado';
+    if (vistoria.situacao_conformidade) return 'em-conformidade';
+    if (vistoria.situacao_irregularidades) return 'irregularidades';
+    if (vistoria.situacao_pendencias) return 'pendencias';
+    if (vistoria.situacao_paralisada) return 'paralisada';
+    return 'rascunho';
+  };
+
+  const getStatusColor = (vistoria: any) => {
+    const status = getVistoriaStatus(vistoria);
     switch (status) {
       case 'finalizado':
         return 'bg-green-100 text-green-800';
-      case 'rascunho':
+      case 'em-conformidade':
+        return 'bg-blue-100 text-blue-800';
+      case 'irregularidades':
+        return 'bg-red-100 text-red-800';
+      case 'pendencias':
         return 'bg-yellow-100 text-yellow-800';
-      default:
+      case 'paralisada':
         return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-orange-100 text-orange-800';
+    }
+  };
+
+  const getStatusText = (vistoria: any) => {
+    const status = getVistoriaStatus(vistoria);
+    switch (status) {
+      case 'finalizado':
+        return 'Finalizado';
+      case 'em-conformidade':
+        return 'Em Conformidade';
+      case 'irregularidades':
+        return 'Irregularidades';
+      case 'pendencias':
+        return 'Com Pendências';
+      case 'paralisada':
+        return 'Paralisada';
+      default:
+        return 'Rascunho';
     }
   };
 
@@ -121,8 +161,8 @@ const VistoriasList = () => {
                     <CardTitle className="text-lg line-clamp-2">
                       {vistoria.nome_obra}
                     </CardTitle>
-                    <Badge className={getStatusColor(vistoria.status)}>
-                      {vistoria.status === 'finalizado' ? 'Finalizado' : 'Rascunho'}
+                    <Badge className={getStatusColor(vistoria)}>
+                      {getStatusText(vistoria)}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -149,10 +189,6 @@ const VistoriasList = () => {
                       </span>
                     </div>
                   )}
-
-                  <div className="pt-2 text-xs text-gray-400">
-                    Criado em {formatDate(vistoria.created_at)}
-                  </div>
                 </CardContent>
               </Card>
             ))}
