@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useVistoria } from "@/hooks/useVistoria";
 import { useAutocomplete } from "@/hooks/useAutocomplete";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,7 +23,8 @@ const Index = () => {
   const { user } = useAuth();
   const { salvarVistoria, adicionarFoto, fotos, isLoading: isSaving } = useVistoria();
   const { autocompleteData } = useAutocomplete();
-  const { latitude, longitude, error: locationError, requestLocation } = useGeolocation();
+  const { latitude, longitude, error: locationError, requestLocation, formatLocationString } = useGeolocation();
+  const { profile } = useUserProfile();
 
   const [nomeObra, setNomeObra] = useState("");
   const [localizacao, setLocalizacao] = useState("");
@@ -44,7 +46,6 @@ const Index = () => {
   const [recomendacoes, setRecomendacoes] = useState("");
   
   const [fiscalNome, setFiscalNome] = useState("");
-  const [fiscalMatricula, setFiscalMatricula] = useState("");
   const [representanteNome, setRepresentanteNome] = useState("");
   const [representanteCargo, setRepresentanteCargo] = useState("");
 
@@ -60,6 +61,24 @@ const Index = () => {
     
     requestLocation();
   }, [requestLocation]);
+
+  // Preencher automaticamente os campos do fiscal com o nome do usuário
+  useEffect(() => {
+    if (profile?.full_name) {
+      setFiscalPrefeitura(profile.full_name);
+      setFiscalNome(profile.full_name);
+    }
+  }, [profile]);
+
+  // Atualizar localização com coordenadas GPS quando disponíveis
+  useEffect(() => {
+    if (latitude && longitude) {
+      const coordenadas = formatLocationString(latitude, longitude);
+      if (!localizacao) {
+        setLocalizacao(coordenadas);
+      }
+    }
+  }, [latitude, longitude, formatLocationString, localizacao]);
 
   const handleObjetivoChange = (objetivo: string, checked: boolean) => {
     if (checked) {
@@ -106,7 +125,7 @@ const Index = () => {
       detalhesPendencias,
       recomendacoes,
       fiscalNome,
-      fiscalMatricula,
+      fiscalMatricula: "", // Campo removido mas mantido vazio para compatibilidade
       representanteNome,
       representanteCargo,
       latitude,
@@ -179,7 +198,7 @@ const Index = () => {
                       id="localizacao"
                       value={localizacao}
                       onChange={(e) => setLocalizacao(e.target.value)}
-                      placeholder="Endereço da obra"
+                      placeholder="Coordenadas GPS serão preenchidas automaticamente"
                       required
                     />
                     {(latitude && longitude) && (
@@ -190,6 +209,11 @@ const Index = () => {
                     <p className="text-sm text-amber-600 mt-1 flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" />
                       Localização não disponível
+                    </p>
+                  )}
+                  {(latitude && longitude) && (
+                    <p className="text-xs text-green-600 mt-1">
+                      GPS ativo: {formatLocationString(latitude, longitude)}
                     </p>
                   )}
                 </div>
@@ -229,7 +253,12 @@ const Index = () => {
                     value={fiscalPrefeitura}
                     onChange={(e) => setFiscalPrefeitura(e.target.value)}
                     placeholder="Nome do fiscal"
+                    className="bg-gray-50"
+                    readOnly
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Preenchido automaticamente com seu nome
+                  </p>
                 </div>
               </div>
 
@@ -376,26 +405,19 @@ const Index = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="fiscalNome">Nome do Fiscal</Label>
-                  <Input
-                    id="fiscalNome"
-                    value={fiscalNome}
-                    onChange={(e) => setFiscalNome(e.target.value)}
-                    placeholder="Nome completo do fiscal"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="fiscalMatricula">Matrícula do Fiscal</Label>
-                  <Input
-                    id="fiscalMatricula"
-                    value={fiscalMatricula}
-                    onChange={(e) => setFiscalMatricula(e.target.value)}
-                    placeholder="Matrícula funcional"
-                  />
-                </div>
+              <div>
+                <Label htmlFor="fiscalNome">Nome do Fiscal</Label>
+                <Input
+                  id="fiscalNome"
+                  value={fiscalNome}
+                  onChange={(e) => setFiscalNome(e.target.value)}
+                  placeholder="Nome completo do fiscal"
+                  className="bg-gray-50"
+                  readOnly
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Preenchido automaticamente com seu nome
+                </p>
               </div>
 
               <Separator />
