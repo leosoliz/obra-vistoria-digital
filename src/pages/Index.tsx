@@ -13,16 +13,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { AutocompleteInput } from "@/components/AutocompleteInput";
-import CameraCapture from "@/components/CameraCapture";
+import { CameraCapture } from "@/components/CameraCapture";
 import { ArrowLeft, MapPin, Camera, FileText, Users, AlertCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { salvarVistoria, fotos, isLoading: isSaving } = useVistoria();
+  const { salvarVistoria, adicionarFoto, fotos, isLoading: isSaving } = useVistoria();
   const { autocompleteData } = useAutocomplete();
-  const { coordinates, error: locationError, getCurrentLocation } = useGeolocation();
+  const { latitude, longitude, error: locationError, requestLocation } = useGeolocation();
 
   const [nomeObra, setNomeObra] = useState("");
   const [localizacao, setLocalizacao] = useState("");
@@ -58,8 +58,8 @@ const Index = () => {
     setDataVistoria(today);
     setHoraVistoria(currentTime);
     
-    getCurrentLocation();
-  }, [getCurrentLocation]);
+    requestLocation();
+  }, [requestLocation]);
 
   const handleObjetivoChange = (objetivo: string, checked: boolean) => {
     if (checked) {
@@ -109,8 +109,8 @@ const Index = () => {
       fiscalMatricula,
       representanteNome,
       representanteCargo,
-      latitude: coordinates?.latitude,
-      longitude: coordinates?.longitude
+      latitude,
+      longitude
     };
 
     const result = await salvarVistoria(vistoriaData);
@@ -118,6 +118,11 @@ const Index = () => {
       // Navegar de volta para a lista de vistorias
       navigate('/vistorias');
     }
+  };
+
+  const handleCameraCapture = (photo: { file: File; preview: string; legenda: string }) => {
+    adicionarFoto(photo);
+    setShowCamera(false);
   };
 
   return (
@@ -177,7 +182,7 @@ const Index = () => {
                       placeholder="Endereço da obra"
                       required
                     />
-                    {coordinates && (
+                    {(latitude && longitude) && (
                       <MapPin className="absolute right-3 top-3 w-4 h-4 text-green-600" />
                     )}
                   </div>
@@ -475,7 +480,10 @@ const Index = () => {
       </div>
 
       {showCamera && (
-        <CameraCapture onClose={() => setShowCamera(false)} />
+        <CameraCapture 
+          onCapture={handleCameraCapture}
+          onClose={() => setShowCamera(false)} 
+        />
       )}
     </div>
   );
