@@ -552,7 +552,9 @@ const Index = () => {
       {showCamera && (
         <CameraCapture 
           onCapture={handleCameraCapture}
-          onClose={() => setShowCamera(false)} 
+          onClose={() => setShowCamera(false)}
+          latitude={latitude}
+          longitude={longitude}
         />
       )}
     </div>

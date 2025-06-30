@@ -9,6 +9,8 @@ import { Camera, X, RotateCcw } from 'lucide-react';
 interface CameraCaptureProps {
   onCapture: (photo: { file: File; preview: string; legenda: string }) => void;
   onClose: () => void;
+  latitude?: number;
+  longitude?: number;
 }
 
 function blobToBase64(blob: Blob): Promise<string> {
@@ -60,9 +62,10 @@ function base64ToFile(base64: string, filename: string): File {
   return new File([u8arr], filename, { type: mime });
 }
 
-export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose }) => {
+export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose, latitude, longitude }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
   const [legenda, setLegenda] = useState('');
@@ -81,6 +84,63 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     };
   };
 
+  const formatLocationString = (lat: number, lng: number): string => {
+    return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+  };
+
+  const drawOverlay = useCallback(() => {
+    if (!overlayCanvasRef.current || !videoRef.current) return;
+
+    const canvas = overlayCanvasRef.current;
+    const video = videoRef.current;
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx) return;
+
+    // Ajustar o tamanho do canvas para corresponder ao vídeo
+    canvas.width = video.videoWidth || video.clientWidth;
+    canvas.height = video.videoHeight || video.clientHeight;
+
+    // Limpar canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Carregar e desenhar o logotipo
+    const logo = new Image();
+    logo.crossOrigin = 'anonymous';
+    logo.onload = () => {
+      // Desenhar logotipo no canto superior esquerdo
+      const logoSize = Math.min(canvas.width * 0.15, 120);
+      ctx.drawImage(logo, 20, 20, logoSize, logoSize);
+    };
+    logo.src = '/lovable-uploads/b69256d9-aadd-4837-8726-b2ac0e97cc7e.png';
+
+    // Desenhar coordenadas GPS se disponíveis
+    if (latitude && longitude) {
+      const coordsText = `GPS: ${formatLocationString(latitude, longitude)}`;
+      
+      // Configurar estilo do texto
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.fillRect(10, canvas.height - 50, coordsText.length * 8 + 20, 35);
+      
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '14px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(coordsText, 20, canvas.height - 25);
+    }
+
+    // Desenhar timestamp
+    const now = new Date();
+    const timestamp = now.toLocaleString('pt-BR');
+    
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(canvas.width - 200, 10, 190, 30);
+    
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(timestamp, canvas.width - 10, 30);
+  }, [latitude, longitude]);
+
   const startCamera = useCallback(async (facing: 'user' | 'environment' = 'environment') => {
     setIsLoading(true);
     try {
@@ -94,6 +154,15 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
         videoRef.current.play();
+        
+        // Aguardar o vídeo carregar para começar a desenhar o overlay
+        videoRef.current.onloadedmetadata = () => {
+          const drawOverlayLoop = () => {
+            drawOverlay();
+            requestAnimationFrame(drawOverlayLoop);
+          };
+          drawOverlayLoop();
+        };
       }
       
       setStream(mediaStream);
@@ -111,6 +180,14 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
         if (videoRef.current) {
           videoRef.current.srcObject = fallbackStream;
           videoRef.current.play();
+          
+          videoRef.current.onloadedmetadata = () => {
+            const drawOverlayLoop = () => {
+              drawOverlay();
+              requestAnimationFrame(drawOverlayLoop);
+            };
+            drawOverlayLoop();
+          };
         }
         
         setStream(fallbackStream);
@@ -121,7 +198,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     } finally {
       setIsLoading(false);
     }
-  }, [stream]);
+  }, [stream, drawOverlay]);
 
   const switchCamera = useCallback(() => {
     const newFacing = facingMode === 'user' ? 'environment' : 'user';
@@ -132,14 +209,16 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     console.log('Iniciando captura de foto...');
     console.log('videoRef.current:', !!videoRef.current);
     console.log('canvasRef.current:', !!canvasRef.current);
+    console.log('overlayCanvasRef.current:', !!overlayCanvasRef.current);
     
-    if (!videoRef.current || !canvasRef.current) {
+    if (!videoRef.current || !canvasRef.current || !overlayCanvasRef.current) {
       console.error('Refs não disponíveis para captura');
       return;
     }
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
+    const overlayCanvas = overlayCanvasRef.current;
     const context = canvas.getContext('2d');
 
     if (!context) {
@@ -152,8 +231,15 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
+    // Desenhar o vídeo no canvas
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const photoDataUrl = canvas.toDataURL();
+    
+    // Desenhar o overlay com logotipo e coordenadas por cima
+    if (overlayCanvas.width > 0 && overlayCanvas.height > 0) {
+      context.drawImage(overlayCanvas, 0, 0, canvas.width, canvas.height);
+    }
+
+    const photoDataUrl = canvas.toDataURL('image/jpeg', 0.9);
     console.log('Foto capturada, tamanho do dataURL:', photoDataUrl.length);
     setPhoto(photoDataUrl);
   }, []);
@@ -168,17 +254,12 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       console.log('canvasRef.current exists:', !!canvasRef.current);
       return;
     }
-    const canvas = canvasRef.current;
-//    canvas.width = 1280;
-//    canvas.height = 720;
-    console.log('Canvas dimensions:', canvas.width, 'x', canvas.height);
 
     try {
       console.log('Convertendo base64 para file...');
       
       // Criar arquivo
-      const file = base64ToFile(photo, `vistoria-${Date.now()}.png`);
-      console.log('Imagem....', await fileToBase64(file));
+      const file = base64ToFile(photo, `vistoria-${Date.now()}.jpg`);
       console.log('Arquivo criado:', {
         name: file.name,
         size: file.size,
@@ -264,6 +345,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
         
         {/* Canvas mantido sempre no DOM, mas escondido */}
         <canvas ref={canvasRef} className="hidden" />
+        <canvas ref={overlayCanvasRef} className="hidden" />
         
         <div className="p-4 bg-black space-y-4 min-h-[140px]">
           <Card className="p-4">
@@ -312,7 +394,13 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           className="w-full h-full object-cover"
         />
         
-        {/* Canvas mantido sempre no DOM, mas escondido */}
+        {/* Overlay canvas para logotipo e coordenadas */}
+        <canvas
+          ref={overlayCanvasRef}
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+        />
+        
+        {/* Canvas para captura mantido sempre no DOM, mas escondido */}
         <canvas ref={canvasRef} className="hidden" />
         
         {isLoading && (
