@@ -121,12 +121,12 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       
       // Configurar estilo do texto
       ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-      ctx.fillRect(canvas.width - 200, 40, coordsText.length * 8 + 20, 35);
+      ctx.fillRect(canvas.width - 200, 40, 190, 30);
       
       ctx.fillStyle = '#FFFFFF';
       ctx.font = '14px monospace';
       ctx.textAlign = 'left';
-      ctx.fillText(coordsText, canvas.width - 10, canvas.height - 65);
+      ctx.fillText(coordsText, canvas.width - 10, 70);
     }
 
     // Desenhar timestamp
