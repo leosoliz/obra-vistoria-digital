@@ -166,7 +166,11 @@ export const generateVistoriaPDF = async (vistoria: VistoriaData) => {
         const maxHeight = 80;
         
         let { width, height } = img;
+        canvas.width = width;
+        canvas.height = height;
+        ctx?.drawImage(img, 0, 0, width, height);
         
+        const imgData = canvas.toDataURL('image/jpeg', 0.8);
         if (width > maxWidth) {
           height = (height * maxWidth) / width;
           width = maxWidth;
@@ -176,12 +180,6 @@ export const generateVistoriaPDF = async (vistoria: VistoriaData) => {
           width = (width * maxHeight) / height;
           height = maxHeight;
         }
-        
-        canvas.width = width;
-        canvas.height = height;
-        ctx?.drawImage(img, 0, 0, width, height);
-        
-        const imgData = canvas.toDataURL('image/jpeg', 0.8);
         
         checkPageBreak(height + 20);
         
