@@ -78,7 +78,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
         facingMode: { ideal: facing },
         width: { ideal: 1280, max: 1920 },
         height: { ideal: 720, max: 1080 },
-        aspectRatio: { ideal: 16/9 }
+        aspectRatio: { ideal: 16 / 9 }
       },
       audio: false
     };
@@ -94,7 +94,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     const canvas = overlayCanvasRef.current;
     const video = videoRef.current;
     const ctx = canvas.getContext('2d');
-    
+
     if (!ctx) return;
 
     // Ajustar o tamanho do canvas para corresponder ao vídeo
@@ -113,33 +113,33 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       const logoSize = Math.min(canvas.width * 0.15, 120);
       ctx.drawImage(logo, 20, 300, logoSize, logoSize);
     };
-    
+
 
     // Desenhar coordenadas GPS se disponíveis
     if (latitude && longitude) {
       const coordsText = `GPS: ${formatLocationString(latitude, longitude)}`;
-      
+
       // Configurar estilo do texto
       ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-      ctx.fillRect(canvas.width - 200, 40, 190, 30);
-      
+      ctx.fillRect(canvas.width - 210, canvas.height - 70, 200, 30);
+
       ctx.fillStyle = '#FFFFFF';
       ctx.font = '14px monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText(coordsText, canvas.width - 10, 70);
+      ctx.textAlign = 'right';
+      ctx.fillText(coordsText, canvas.width - 10, canvas.height - 50);
     }
 
     // Desenhar timestamp
     const now = new Date();
     const timestamp = now.toLocaleString('pt-BR');
-    
+
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(canvas.width - 200, 10, 190, 30);
-    
+    ctx.fillRect(canvas.width - 210, canvas.height - 35, 200, 30);
+
     ctx.fillStyle = '#FFFFFF';
     ctx.font = '12px monospace';
     ctx.textAlign = 'right';
-    ctx.fillText(timestamp, canvas.width - 10, 30);
+    ctx.fillText(timestamp, canvas.width - 10, canvas.height - 15);
   }, [latitude, longitude]);
 
   const startCamera = useCallback(async (facing: 'user' | 'environment' = 'environment') => {
@@ -151,11 +151,11 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 
       const constraints = getMediaConstraints(facing);
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-      
+
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
         videoRef.current.play();
-        
+
         // Aguardar o vídeo carregar para começar a desenhar o overlay
         videoRef.current.onloadedmetadata = () => {
           const drawOverlayLoop = () => {
@@ -165,7 +165,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           drawOverlayLoop();
         };
       }
-      
+
       setStream(mediaStream);
       setFacingMode(facing);
     } catch (error) {
@@ -177,11 +177,11 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           audio: false
         };
         const fallbackStream = await navigator.mediaDevices.getUserMedia(simpleConstraints);
-        
+
         if (videoRef.current) {
           videoRef.current.srcObject = fallbackStream;
           videoRef.current.play();
-          
+
           videoRef.current.onloadedmetadata = () => {
             const drawOverlayLoop = () => {
               drawOverlay();
@@ -190,7 +190,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
             drawOverlayLoop();
           };
         }
-        
+
         setStream(fallbackStream);
         setFacingMode(facing);
       } catch (fallbackError) {
@@ -211,7 +211,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     console.log('videoRef.current:', !!videoRef.current);
     console.log('canvasRef.current:', !!canvasRef.current);
     console.log('overlayCanvasRef.current:', !!overlayCanvasRef.current);
-    
+
     if (!videoRef.current || !canvasRef.current || !overlayCanvasRef.current) {
       console.error('Refs não disponíveis para captura');
       return;
@@ -228,13 +228,13 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     }
 
     console.log('Video dimensions:', video.videoWidth, 'x', video.videoHeight);
-    
+
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
     // Desenhar o vídeo no canvas
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
+
     // Desenhar o overlay com logotipo e coordenadas por cima
     if (overlayCanvas.width > 0 && overlayCanvas.height > 0) {
       context.drawImage(overlayCanvas, 0, 0, canvas.width, canvas.height);
@@ -248,7 +248,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
   const confirmPhoto = useCallback(async () => {
     console.log('=== INÍCIO confirmPhoto ===');
     console.log('Estado atual - photo:', !!photo, 'canvas:', !!canvasRef.current, 'legenda:', legenda);
-    
+
     if (!photo || !canvasRef.current) {
       console.error('Dados necessários não disponíveis para confirmação');
       console.log('photo exists:', !!photo);
@@ -258,7 +258,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 
     try {
       console.log('Convertendo base64 para file...');
-      
+
       // Criar arquivo
       const file = base64ToFile(photo, `vistoria-${Date.now()}.jpg`);
       console.log('Arquivo criado:', {
@@ -315,7 +315,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
   React.useEffect(() => {
     console.log('Iniciando câmera...');
     startCamera();
-    
+
     return () => {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
@@ -335,19 +335,19 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
             <X className="w-4 h-4" />
           </Button>
         </div>
-        
+
         <div className="flex-1 flex items-center justify-center p-4 overflow-hidden">
-          <img 
-            src={photo} 
-            alt="Foto capturada" 
+          <img
+            src={photo}
+            alt="Foto capturada"
             className="max-w-full max-h-full object-contain rounded-lg"
           />
         </div>
-        
+
         {/* Canvas mantido sempre no DOM, mas escondido */}
         <canvas ref={canvasRef} className="hidden" />
         <canvas ref={overlayCanvasRef} className="hidden" />
-        
+
         <div className="p-4 bg-black space-y-4 min-h-[140px]">
           <Card className="p-4">
             <Label htmlFor="legenda" className="text-sm font-medium">
@@ -361,9 +361,9 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
               className="mt-2"
             />
           </Card>
-          <Button 
-            onClick={confirmPhoto} 
-            className="w-full" 
+          <Button
+            onClick={confirmPhoto}
+            className="w-full"
             size="lg"
             disabled={isLoading}
           >
@@ -385,7 +385,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           <X className="w-4 h-4" />
         </Button>
       </div>
-      
+
       <div className="flex-1 relative overflow-hidden">
         <video
           ref={videoRef}
@@ -394,28 +394,28 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           muted
           className="w-full h-full object-cover"
         />
-        
+
         {/* Overlay canvas para logotipo e coordenadas */}
         <canvas
           ref={overlayCanvasRef}
           className="absolute inset-0 w-full h-full object-cover pointer-events-none"
         />
-        
+
         {/* Canvas para captura mantido sempre no DOM, mas escondido */}
         <canvas ref={canvasRef} className="hidden" />
-        
+
         {isLoading && (
           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
             <div className="text-white text-lg">Carregando câmera...</div>
           </div>
         )}
       </div>
-      
+
       <div className="p-4 bg-black min-h-[100px] flex items-center justify-center">
-        <Button 
-          onClick={capturePhoto} 
+        <Button
+          onClick={capturePhoto}
           disabled={isLoading}
-          className="w-20 h-20 rounded-full p-0" 
+          className="w-20 h-20 rounded-full p-0"
           size="lg"
         >
           <Camera className="w-8 h-8" />
