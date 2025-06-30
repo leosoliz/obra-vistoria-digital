@@ -134,10 +134,10 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     const timestamp = now.toLocaleString('pt-BR');
 
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(canvas.width - 210, canvas.height - 35, 200, 30);
+    ctx.fillRect(canvas.width - 210, canvas.height - 45, 200, 30);
 
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = '12px monospace';
+    ctx.font = '14px monospace';
     ctx.textAlign = 'right';
     ctx.fillText(timestamp, canvas.width - 10, canvas.height - 35);
   }, [latitude, longitude]);
