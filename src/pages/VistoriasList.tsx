@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -33,8 +34,36 @@ const VistoriasList = () => {
     navigate(`/vistoria/${vistoriaId}`);
   };
 
-  const handlePrintPDF = (vistoria: any) => {
-    generateVistoriaPDF(vistoria);
+  const handlePrintPDF = async (vistoria: any) => {
+    try {
+      // Buscar dados completos da vistoria incluindo fotos
+      const { supabase } = await import('@/integrations/supabase/client');
+      
+      const { data: vistoriaCompleta, error: vistoriaError } = await supabase
+        .from('obra_vistorias')
+        .select('*')
+        .eq('id', vistoria.id)
+        .single();
+
+      if (vistoriaError) throw vistoriaError;
+
+      const { data: fotos, error: fotosError } = await supabase
+        .from('vistoria_fotos')
+        .select('*')
+        .eq('vistoria_id', vistoria.id)
+        .order('ordem');
+
+      if (fotosError) throw fotosError;
+
+      const vistoriaComFotos = {
+        ...vistoriaCompleta,
+        fotos: fotos || []
+      };
+
+      await generateVistoriaPDF(vistoriaComFotos);
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+    }
   };
 
   const getVistoriaStatus = (vistoria: any) => {
@@ -44,7 +73,7 @@ const VistoriasList = () => {
     if (vistoria.situacao_irregularidades) return 'irregularidades';
     if (vistoria.situacao_pendencias) return 'pendencias';
     if (vistoria.situacao_paralisada) return 'paralisada';
-    return 'rascunho';
+    return 'em-andamento';
   };
 
   const getStatusColor = (vistoria: any) => {
@@ -79,7 +108,7 @@ const VistoriasList = () => {
       case 'paralisada':
         return 'Paralisada';
       default:
-        return 'Rascunho';
+        return 'Em Andamento';
     }
   };
 
@@ -160,20 +189,16 @@ const VistoriasList = () => {
           </CardHeader>
           <CardContent>
             {statsLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-                {[...Array(7)].map((_, i) => (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                {[...Array(6)].map((_, i) => (
                   <Skeleton key={i} className="h-16" />
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 <div className="text-center p-3 bg-blue-50 rounded-lg">
                   <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
                   <div className="text-xs text-blue-600">Total</div>
-                </div>
-                <div className="text-center p-3 bg-orange-50 rounded-lg">
-                  <div className="text-2xl font-bold text-orange-600">{stats.rascunho}</div>
-                  <div className="text-xs text-orange-600">Rascunho</div>
                 </div>
                 <div className="text-center p-3 bg-green-50 rounded-lg">
                   <div className="text-2xl font-bold text-green-600">{stats.finalizado}</div>

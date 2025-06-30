@@ -5,7 +5,6 @@ import { useAuth } from './useAuth';
 
 interface VistoriasStats {
   total: number;
-  rascunho: number;
   finalizado: number;
   emConformidade: number;
   irregularidades: number;
@@ -17,7 +16,6 @@ export const useVistoriasStats = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState<VistoriasStats>({
     total: 0,
-    rascunho: 0,
     finalizado: 0,
     emConformidade: 0,
     irregularidades: 0,
@@ -52,12 +50,10 @@ export const useVistoriasStats = () => {
         else if (vistoria.situacao_irregularidades) acc.irregularidades++;
         else if (vistoria.situacao_pendencias) acc.pendencias++;
         else if (vistoria.situacao_paralisada) acc.paralisada++;
-        else acc.rascunho++;
 
         return acc;
       }, {
         total: 0,
-        rascunho: 0,
         finalizado: 0,
         emConformidade: 0,
         irregularidades: 0,
