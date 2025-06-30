@@ -107,12 +107,13 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     // Carregar e desenhar o logotipo
     const logo = new Image();
     logo.crossOrigin = 'anonymous';
+    logo.src = '/lovable-uploads/216f61c9-3d63-4dfe-9f04-239b1cb9cd3b.png';
     logo.onload = () => {
       // Desenhar logotipo no canto superior esquerdo
       const logoSize = Math.min(canvas.width * 0.15, 120);
       ctx.drawImage(logo, 20, 300, logoSize, logoSize);
     };
-    logo.src = '/lovable-uploads/216f61c9-3d63-4dfe-9f04-239b1cb9cd3b.png';
+    
 
     // Desenhar coordenadas GPS se disponíveis
     if (latitude && longitude) {
