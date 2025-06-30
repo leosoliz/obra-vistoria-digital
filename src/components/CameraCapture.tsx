@@ -121,12 +121,12 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 
       // Configurar estilo do texto
       ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-      ctx.fillRect(canvas.width - 210, canvas.height - 95, 220, 25);
+      ctx.fillRect(canvas.width - 220, canvas.height - 95, 220, 25);
 
       ctx.fillStyle = '#FFFFFF';
       ctx.font = '14px monospace';
       ctx.textAlign = 'right';
-      ctx.fillText(coordsText, canvas.width - 10, canvas.height - 65);
+      ctx.fillText(coordsText, canvas.width - 10, canvas.height - 60);
     }
 
     // Desenhar timestamp
@@ -134,7 +134,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     const timestamp = now.toLocaleString('pt-BR');
 
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(canvas.width - 210, canvas.height - 65, 220, 25);
+    ctx.fillRect(canvas.width - 220, canvas.height - 65, 220, 25);
 
     ctx.fillStyle = '#FFFFFF';
     ctx.font = '14px monospace';
@@ -143,11 +143,11 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 
     // Desenhar Departamento
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(canvas.width - 210, canvas.height - 35, 220, 25);
+    ctx.fillRect(canvas.width - 220, canvas.height - 35, 220, 25);
     ctx.fillStyle = '#FFFFFF';
     ctx.font = '14px monospace';
     ctx.textAlign = 'right';
-    ctx.fillText('PMPG - Planejamento Urbano', canvas.width - 10, canvas.height - 10);
+    ctx.fillText('PMPG - Planejamento Urbano', canvas.width - 10, canvas.height - 20);
 
   }, [latitude, longitude]);
 
