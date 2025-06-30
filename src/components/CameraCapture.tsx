@@ -139,7 +139,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     ctx.fillStyle = '#FFFFFF';
     ctx.font = '12px monospace';
     ctx.textAlign = 'right';
-    ctx.fillText(timestamp, canvas.width - 10, canvas.height - 15);
+    ctx.fillText(timestamp, canvas.width - 10, canvas.height - 25);
   }, [latitude, longitude]);
 
   const startCamera = useCallback(async (facing: 'user' | 'environment' = 'environment') => {
