@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "./hooks/useAuth";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import VistoriasList from "./pages/VistoriasList";
+import VistoriaView from "./pages/VistoriaView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -53,6 +54,11 @@ const AppRoutes = () => {
       <Route path="/vistorias" element={
         <ProtectedRoute>
           <VistoriasList />
+        </ProtectedRoute>
+      } />
+      <Route path="/vistoria/:id" element={
+        <ProtectedRoute>
+          <VistoriaView />
         </ProtectedRoute>
       } />
       <Route path="/" element={

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -71,12 +70,11 @@ const Auth = () => {
       <Card className="w-full max-w-md shadow-2xl border-0">
         <CardHeader className="text-center pb-8 gradient-institucional text-white rounded-t-lg">
           <div className="flex items-center justify-center mb-6">
-            <div className="relative mr-3">
-              <Shield className="h-12 w-12 text-white" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Building2 className="h-6 w-6 text-yellow-200" />
-              </div>
-            </div>
+            <img 
+              src="/lovable-uploads/216f61c9-3d63-4dfe-9f04-239b1cb9cd3b.png" 
+              alt="Brasão Presidente Getúlio" 
+              className="h-16 w-16 object-contain mr-4"
+            />
             <div className="text-left">
               <CardTitle className="text-xl font-bold mb-1">PREFEITURA MUNICIPAL DE</CardTitle>
               <CardTitle className="text-xl font-bold mb-2">PRESIDENTE GETÚLIO</CardTitle>

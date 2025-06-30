@@ -1,20 +1,22 @@
-
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useVistorias } from '@/hooks/useVistorias';
+import { useVistoriasStats } from '@/hooks/useVistoriasStats';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, MapPin, Building, Plus, LogOut } from 'lucide-react';
+import { Calendar, MapPin, Building, Plus, LogOut, Eye, Download, BarChart3 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { generateVistoriaPDF } from '@/utils/pdfGenerator';
 
 const VistoriasList = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { vistorias, isLoading, refetch } = useVistorias();
+  const { stats, isLoading: statsLoading } = useVistoriasStats();
 
   // Recarregar dados toda vez que a tela é acessada
   useEffect(() => {
@@ -25,6 +27,14 @@ const VistoriasList = () => {
     const { supabase } = await import('@/integrations/supabase/client');
     await supabase.auth.signOut();
     navigate('/auth');
+  };
+
+  const handleViewVistoria = (vistoriaId: string) => {
+    navigate(`/vistoria/${vistoriaId}`);
+  };
+
+  const handlePrintPDF = (vistoria: any) => {
+    generateVistoriaPDF(vistoria);
   };
 
   const getVistoriaStatus = (vistoria: any) => {
@@ -104,13 +114,20 @@ const VistoriasList = () => {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Minhas Vistorias
-              </h1>
-              <p className="text-gray-600 mt-1">
-                Bem-vindo, {user?.email}
-              </p>
+            <div className="flex items-center gap-4">
+              <img 
+                src="/lovable-uploads/216f61c9-3d63-4dfe-9f04-239b1cb9cd3b.png" 
+                alt="Brasão Presidente Getúlio" 
+                className="h-12 w-12 object-contain"
+              />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Minhas Vistorias
+                </h1>
+                <p className="text-gray-600 mt-1">
+                  Bem-vindo, {user?.email}
+                </p>
+              </div>
             </div>
             <div className="flex gap-3">
               <Button
@@ -133,6 +150,56 @@ const VistoriasList = () => {
       </div>
 
       <div className="max-w-6xl mx-auto p-6">
+        {/* Dashboard de Estatísticas */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5" />
+              Dashboard de Vistorias
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {statsLoading ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                {[...Array(7)].map((_, i) => (
+                  <Skeleton key={i} className="h-16" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                <div className="text-center p-3 bg-blue-50 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
+                  <div className="text-xs text-blue-600">Total</div>
+                </div>
+                <div className="text-center p-3 bg-orange-50 rounded-lg">
+                  <div className="text-2xl font-bold text-orange-600">{stats.rascunho}</div>
+                  <div className="text-xs text-orange-600">Rascunho</div>
+                </div>
+                <div className="text-center p-3 bg-green-50 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600">{stats.finalizado}</div>
+                  <div className="text-xs text-green-600">Finalizado</div>
+                </div>
+                <div className="text-center p-3 bg-blue-50 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600">{stats.emConformidade}</div>
+                  <div className="text-xs text-blue-600">Conformidade</div>
+                </div>
+                <div className="text-center p-3 bg-red-50 rounded-lg">
+                  <div className="text-2xl font-bold text-red-600">{stats.irregularidades}</div>
+                  <div className="text-xs text-red-600">Irregularidades</div>
+                </div>
+                <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                  <div className="text-2xl font-bold text-yellow-600">{stats.pendencias}</div>
+                  <div className="text-xs text-yellow-600">Pendências</div>
+                </div>
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <div className="text-2xl font-bold text-gray-600">{stats.paralisada}</div>
+                  <div className="text-xs text-gray-600">Paralisada</div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {vistorias.length === 0 ? (
           <div className="text-center py-12">
             <div className="bg-white rounded-lg shadow-sm p-8 max-w-md mx-auto">
@@ -189,6 +256,27 @@ const VistoriasList = () => {
                       </span>
                     </div>
                   )}
+
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleViewVistoria(vistoria.id)}
+                      className="flex-1"
+                    >
+                      <Eye className="w-3 h-3 mr-1" />
+                      Ver
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handlePrintPDF(vistoria)}
+                      className="flex-1"
+                    >
+                      <Download className="w-3 h-3 mr-1" />
+                      PDF
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
