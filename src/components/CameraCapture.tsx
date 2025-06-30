@@ -110,7 +110,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     logo.onload = () => {
       // Desenhar logotipo no canto superior esquerdo
       const logoSize = Math.min(canvas.width * 0.15, 120);
-      ctx.drawImage(logo, 20, 20, logoSize, logoSize);
+      ctx.drawImage(logo, 20, 300, logoSize, logoSize);
     };
     logo.src = '/lovable-uploads/216f61c9-3d63-4dfe-9f04-239b1cb9cd3b.png';
 
