@@ -121,7 +121,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       
       // Configurar estilo do texto
       ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-      ctx.fillRect(10, canvas.height - 50, coordsText.length * 8 + 20, 35);
+      ctx.fillRect(canvas.width - 200, 40, coordsText.length * 8 + 20, 35);
       
       ctx.fillStyle = '#FFFFFF';
       ctx.font = '14px monospace';
