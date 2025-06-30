@@ -134,7 +134,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     const timestamp = now.toLocaleString('pt-BR');
 
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(canvas.width - 220, canvas.height - 55, 220, 25);
+    ctx.fillRect(canvas.width - 220, canvas.height - 60, 220, 25);
 
     ctx.fillStyle = '#FFFFFF';
     ctx.font = '14px monospace';
@@ -143,7 +143,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 
     // Desenhar Departamento
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(canvas.width - 220, canvas.height - 45, 220, 25);
+    ctx.fillRect(canvas.width - 220, canvas.height - 35, 220, 25);
     ctx.fillStyle = '#FFFFFF';
     ctx.font = '14px monospace';
     ctx.textAlign = 'right';
