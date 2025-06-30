@@ -112,7 +112,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       const logoSize = Math.min(canvas.width * 0.15, 120);
       ctx.drawImage(logo, 20, 20, logoSize, logoSize);
     };
-    logo.src = '/lovable-uploads/b69256d9-aadd-4837-8726-b2ac0e97cc7e.png';
+    logo.src = '/lovable-uploads/216f61c9-3d63-4dfe-9f04-239b1cb9cd3b.png';
 
     // Desenhar coordenadas GPS se disponíveis
     if (latitude && longitude) {
