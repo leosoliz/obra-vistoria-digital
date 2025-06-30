@@ -126,7 +126,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       ctx.fillStyle = '#FFFFFF';
       ctx.font = '14px monospace';
       ctx.textAlign = 'right';
-      ctx.fillText(coordsText, canvas.width - 10, canvas.height - 60);
+      ctx.fillText(coordsText, canvas.width - 10, canvas.height - 70);
     }
 
     // Desenhar timestamp
@@ -139,7 +139,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     ctx.fillStyle = '#FFFFFF';
     ctx.font = '14px monospace';
     ctx.textAlign = 'right';
-    ctx.fillText(timestamp, canvas.width - 10, canvas.height - 40);
+    ctx.fillText(timestamp, canvas.width - 10, canvas.height - 45);
 
     // Desenhar Departamento
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
