@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { generateVistoriaPDF } from '@/utils/pdfGenerator';
 import { toast } from '@/hooks/use-toast';
+import MobileMenu from '@/components/MobileMenu';
 
 const VistoriasList = () => {
   const navigate = useNavigate();
@@ -182,7 +183,7 @@ const VistoriasList = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-gray-50 p-4 md:p-6">
         <div className="max-w-6xl mx-auto">
           <div className="flex justify-between items-center mb-8">
             <Skeleton className="h-8 w-64" />
@@ -201,24 +202,26 @@ const VistoriasList = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-6xl mx-auto px-6 py-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
               <img 
                 src="/lovable-uploads/216f61c9-3d63-4dfe-9f04-239b1cb9cd3b.png" 
                 alt="Brasão Presidente Getúlio" 
-                className="h-12 w-12 object-contain"
+                className="h-10 w-10 sm:h-12 sm:w-12 object-contain flex-shrink-0"
               />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
                   Minhas Vistorias
                 </h1>
-                <p className="text-gray-600 mt-1">
+                <p className="text-sm sm:text-base text-gray-600 mt-1 truncate">
                   Bem-vindo, {user?.email}
                 </p>
               </div>
             </div>
-            <div className="flex gap-3">
+            
+            {/* Desktop buttons */}
+            <div className="hidden md:flex gap-3">
               <Button
                 onClick={() => navigate('/')}
                 className="bg-blue-600 hover:bg-blue-700"
@@ -234,49 +237,56 @@ const VistoriasList = () => {
                 Sair
               </Button>
             </div>
+            
+            {/* Mobile menu */}
+            <MobileMenu
+              onNewVistoria={() => navigate('/')}
+              onLogout={handleLogout}
+              userEmail={user?.email}
+            />
           </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="max-w-6xl mx-auto p-4 sm:p-6">
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
               <BarChart3 className="w-5 h-5" />
               Dashboard de Vistorias
             </CardTitle>
           </CardHeader>
           <CardContent>
             {statsLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
                 {[...Array(6)].map((_, i) => (
                   <Skeleton key={i} className="h-16" />
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
                 <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
+                  <div className="text-xl sm:text-2xl font-bold text-blue-600">{stats.total}</div>
                   <div className="text-xs text-blue-600">Total</div>
                 </div>
                 <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">{stats.finalizado}</div>
+                  <div className="text-xl sm:text-2xl font-bold text-green-600">{stats.finalizado}</div>
                   <div className="text-xs text-green-600">Finalizado</div>
                 </div>
                 <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">{stats.emConformidade}</div>
+                  <div className="text-xl sm:text-2xl font-bold text-blue-600">{stats.emConformidade}</div>
                   <div className="text-xs text-blue-600">Conformidade</div>
                 </div>
                 <div className="text-center p-3 bg-red-50 rounded-lg">
-                  <div className="text-2xl font-bold text-red-600">{stats.irregularidades}</div>
+                  <div className="text-xl sm:text-2xl font-bold text-red-600">{stats.irregularidades}</div>
                   <div className="text-xs text-red-600">Irregularidades</div>
                 </div>
                 <div className="text-center p-3 bg-yellow-50 rounded-lg">
-                  <div className="text-2xl font-bold text-yellow-600">{stats.pendencias}</div>
+                  <div className="text-xl sm:text-2xl font-bold text-yellow-600">{stats.pendencias}</div>
                   <div className="text-xs text-yellow-600">Pendências</div>
                 </div>
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <div className="text-2xl font-bold text-gray-600">{stats.paralisada}</div>
+                  <div className="text-xl sm:text-2xl font-bold text-gray-600">{stats.paralisada}</div>
                   <div className="text-xs text-gray-600">Paralisada</div>
                 </div>
               </div>
@@ -286,17 +296,17 @@ const VistoriasList = () => {
 
         {vistorias.length === 0 ? (
           <div className="text-center py-12">
-            <div className="bg-white rounded-lg shadow-sm p-8 max-w-md mx-auto">
+            <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8 max-w-md mx-auto">
               <Building className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 Nenhuma vistoria encontrada
               </h3>
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-600 mb-6 text-sm sm:text-base">
                 Você ainda não criou nenhuma vistoria. Comece criando sua primeira vistoria.
               </p>
               <Button
                 onClick={() => navigate('/')}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Criar Primeira Vistoria
@@ -304,15 +314,15 @@ const VistoriasList = () => {
             </div>
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
             {vistorias.map((vistoria) => (
               <Card key={vistoria.id} className="hover:shadow-md transition-shadow">
                 <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg line-clamp-2">
+                  <div className="flex justify-between items-start gap-2">
+                    <CardTitle className="text-base sm:text-lg line-clamp-2 min-w-0 flex-1">
                       {vistoria.nome_obra}
                     </CardTitle>
-                    <Badge className={getStatusColor(vistoria)}>
+                    <Badge className={`${getStatusColor(vistoria)} text-xs whitespace-nowrap flex-shrink-0`}>
                       {getStatusText(vistoria)}
                     </Badge>
                   </div>
@@ -341,7 +351,7 @@ const VistoriasList = () => {
                     </div>
                   )}
 
-                  <div className="flex gap-2 pt-2">
+                  <div className="flex flex-col sm:flex-row gap-2 pt-2">
                     <Button
                       size="sm"
                       variant="outline"
