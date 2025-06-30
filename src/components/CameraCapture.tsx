@@ -126,7 +126,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       ctx.fillStyle = '#FFFFFF';
       ctx.font = '14px monospace';
       ctx.textAlign = 'left';
-      ctx.fillText(coordsText, 20, canvas.height - 25);
+      ctx.fillText(coordsText, canvas.width - 10, canvas.height - 65);
     }
 
     // Desenhar timestamp
