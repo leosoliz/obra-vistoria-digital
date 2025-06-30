@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -8,10 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, MapPin, Building, Plus, LogOut, Eye, Download, BarChart3 } from 'lucide-react';
+import { Calendar, MapPin, Building, Plus, LogOut, Eye, Download, BarChart3, Image } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { generateVistoriaPDF } from '@/utils/pdfGenerator';
+import { toast } from '@/hooks/use-toast';
 
 const VistoriasList = () => {
   const navigate = useNavigate();
@@ -63,6 +63,66 @@ const VistoriasList = () => {
       await generateVistoriaPDF(vistoriaComFotos);
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
+      toast({
+        title: "Erro", 
+        description: "Não foi possível gerar o PDF",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDownloadImages = async (vistoria: any) => {
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      
+      const { data: fotos, error } = await supabase
+        .from('vistoria_fotos')
+        .select('*')
+        .eq('vistoria_id', vistoria.id)
+        .order('ordem');
+
+      if (error) throw error;
+
+      if (!fotos || fotos.length === 0) {
+        toast({
+          title: "Aviso",
+          description: "Esta vistoria não possui fotos para download",
+          variant: "default"
+        });
+        return;
+      }
+
+      // Download das imagens
+      for (const foto of fotos) {
+        try {
+          const response = await fetch(foto.arquivo_url);
+          const blob = await response.blob();
+          
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `vistoria_${vistoria.nome_obra}_foto_${foto.ordem}.jpg`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        } catch (imgError) {
+          console.warn(`Erro ao baixar imagem ${foto.ordem}:`, imgError);
+        }
+      }
+
+      toast({
+        title: "Sucesso",
+        description: `${fotos.length} imagem(ns) baixada(s) com sucesso!`
+      });
+
+    } catch (error) {
+      console.error('Erro ao baixar imagens:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível baixar as imagens",
+        variant: "destructive"
+      });
     }
   };
 
@@ -179,7 +239,6 @@ const VistoriasList = () => {
       </div>
 
       <div className="max-w-6xl mx-auto p-6">
-        {/* Dashboard de Estatísticas */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -300,6 +359,15 @@ const VistoriasList = () => {
                     >
                       <Download className="w-3 h-3 mr-1" />
                       PDF
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDownloadImages(vistoria)}
+                      className="flex-1"
+                    >
+                      <Image className="w-3 h-3 mr-1" />
+                      Fotos
                     </Button>
                   </div>
                 </CardContent>

@@ -10,6 +10,7 @@ interface AutocompleteData {
   engenheiros_responsavel: string[];
   representantes_nome: string[];
   representantes_cargo: string[];
+  outros_objetivos: string[];
 }
 
 export const useAutocomplete = () => {
@@ -20,7 +21,8 @@ export const useAutocomplete = () => {
     empresas_responsavel: [],
     engenheiros_responsavel: [],
     representantes_nome: [],
-    representantes_cargo: []
+    representantes_cargo: [],
+    outros_objetivos: []
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -37,7 +39,8 @@ export const useAutocomplete = () => {
           empresa_responsavel,
           engenheiro_responsavel,
           representante_nome,
-          representante_cargo
+          representante_cargo,
+          objetivo_outros
         `)
         .eq('user_id', user.id);
 
@@ -50,7 +53,8 @@ export const useAutocomplete = () => {
         empresas_responsavel: [...new Set(data?.map(item => item.empresa_responsavel).filter(Boolean) || [])],
         engenheiros_responsavel: [...new Set(data?.map(item => item.engenheiro_responsavel).filter(Boolean) || [])],
         representantes_nome: [...new Set(data?.map(item => item.representante_nome).filter(Boolean) || [])],
-        representantes_cargo: [...new Set(data?.map(item => item.representante_cargo).filter(Boolean) || [])]
+        representantes_cargo: [...new Set(data?.map(item => item.representante_cargo).filter(Boolean) || [])],
+        outros_objetivos: [...new Set(data?.map(item => item.objetivo_outros).filter(Boolean) || [])]
       };
 
       setAutocompleteData(uniqueData);

@@ -5,6 +5,7 @@ import { useVistoria } from "@/hooks/useVistoria";
 import { useAutocomplete } from "@/hooks/useAutocomplete";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useOfflineStorage } from "@/hooks/useOfflineStorage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { AutocompleteInput } from "@/components/AutocompleteInput";
 import { CameraCapture } from "@/components/CameraCapture";
-import { ArrowLeft, MapPin, Camera, FileText, Users, AlertCircle } from "lucide-react";
+import { ArrowLeft, MapPin, Camera, FileText, Users, AlertCircle, Wifi, WifiOff } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const Index = () => {
@@ -25,6 +26,7 @@ const Index = () => {
   const { autocompleteData } = useAutocomplete();
   const { latitude, longitude, error: locationError, requestLocation, formatLocationString } = useGeolocation();
   const { profile } = useUserProfile();
+  const { saveOfflineVistoria, getPendingVistorias, syncPendingVistorias, isOnline } = useOfflineStorage();
 
   const [nomeObra, setNomeObra] = useState("");
   const [localizacao, setLocalizacao] = useState("");
@@ -80,6 +82,13 @@ const Index = () => {
     }
   }, [latitude, longitude, formatLocationString, localizacao]);
 
+  // Sincronizar dados pendentes quando online
+  useEffect(() => {
+    if (isOnline) {
+      syncPendingVistorias();
+    }
+  }, [isOnline, syncPendingVistorias]);
+
   const handleObjetivoChange = (objetivo: string, checked: boolean) => {
     if (checked) {
       setObjetivoVistoria([...objetivoVistoria, objetivo]);
@@ -132,10 +141,33 @@ const Index = () => {
       longitude
     };
 
-    const result = await salvarVistoria(vistoriaData);
-    if (result) {
-      // Navegar de volta para a lista de vistorias
-      navigate('/vistorias');
+    try {
+      if (isOnline) {
+        // Tentar salvar online
+        const result = await salvarVistoria(vistoriaData);
+        if (result) {
+          navigate('/vistorias');
+        }
+      } else {
+        // Salvar offline
+        await saveOfflineVistoria(vistoriaData, fotos);
+        toast({
+          title: "Vistoria salva offline",
+          description: "A vistoria será sincronizada quando a conexão retornar.",
+        });
+        navigate('/vistorias');
+      }
+    } catch (error) {
+      // Se falhou online, tenta salvar offline
+      if (isOnline) {
+        console.log('Falha ao salvar online, tentando offline...');
+        await saveOfflineVistoria(vistoriaData, fotos);
+        toast({
+          title: "Salvo offline",
+          description: "Erro na conexão. Vistoria salva localmente e será sincronizada automaticamente.",
+        });
+        navigate('/vistorias');
+      }
     }
   };
 
@@ -158,12 +190,28 @@ const Index = () => {
               <ArrowLeft className="w-4 h-4" />
               Voltar
             </Button>
+            <img 
+              src="/lovable-uploads/216f61c9-3d63-4dfe-9f04-239b1cb9cd3b.png" 
+              alt="Brasão Presidente Getúlio" 
+              className="h-12 w-12 object-contain"
+            />
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
                 Nova Vistoria de Obra
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-gray-600 mt-1 flex items-center gap-2">
                 Preencha os dados da vistoria
+                {isOnline ? (
+                  <span className="flex items-center gap-1 text-green-600 text-sm">
+                    <Wifi className="w-4 h-4" />
+                    Online
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 text-orange-600 text-sm">
+                    <WifiOff className="w-4 h-4" />
+                    Offline
+                  </span>
+                )}
               </p>
             </div>
           </div>
@@ -313,11 +361,11 @@ const Index = () => {
               </div>
 
               <div className="mt-4">
-                <Label htmlFor="outroObjetivo">Outro objetivo (especificar)</Label>
-                <Input
-                  id="outroObjetivo"
+                <AutocompleteInput
+                  label="Outro objetivo (especificar)"
                   value={outroObjetivo}
-                  onChange={(e) => setOutroObjetivo(e.target.value)}
+                  onChange={setOutroObjetivo}
+                  suggestions={autocompleteData.outros_objetivos}
                   placeholder="Especifique outro objetivo"
                 />
               </div>
@@ -495,7 +543,7 @@ const Index = () => {
               disabled={isSaving}
               className="flex-1 bg-blue-600 hover:bg-blue-700"
             >
-              {isSaving ? "Salvando..." : "Finalizar Vistoria"}
+              {isSaving ? "Salvando..." : isOnline ? "Finalizar Vistoria" : "Salvar Offline"}
             </Button>
           </div>
         </form>
