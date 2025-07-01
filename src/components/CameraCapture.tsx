@@ -117,6 +117,9 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
       console.log('Foto capturada, tamanho do dataURL:', dataURL.length);
       setPhoto(dataURL);
       setIsCapturing(true);
+      
+      // Parar câmera após capturar
+      stopCamera();
     };
     
     logo.src = '/lovable-uploads/b69256d9-aadd-4837-8726-b2ac0e97cc7e.png';
@@ -133,9 +136,12 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
 
   const confirmPhoto = () => {
     console.log('=== INÍCIO confirmPhoto ===');
-    console.log('Estado atual - photo:', !!photo, 'canvas:', !!canvasRef.current, 'legenda:', legenda);
+    console.log('Estado atual - photo:', !!photo, 'legenda:', legenda);
     
-    if (!photo || !canvasRef.current) return;
+    if (!photo) {
+      console.log('Foto não disponível, saindo...');
+      return;
+    }
 
     console.log('Convertendo base64 para file...');
     
@@ -172,20 +178,23 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
 
     onCapture(photoData);
     
-    console.log('onCapture executado, parando stream...');
-    stopCamera();
-    console.log('Fechando modal...');
+    console.log('onCapture executado, limpando estado...');
+    
+    // Limpar estado e fechar
+    setPhoto(null);
+    setLegenda('');
+    setIsCapturing(false);
   };
 
   useEffect(() => {
-    if (!isCapturing) {
+    if (!isCapturing && !photo) {
       startCamera();
     }
     
     return () => {
       stopCamera();
     };
-  }, [isCapturing]);
+  }, [isCapturing, photo]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
@@ -208,6 +217,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
                   playsInline
                   muted
                 />
+                
+                {/* Canvas ocultos para captura */}
                 <canvas ref={canvasRef} className="hidden" />
                 <canvas ref={overlayCanvasRef} className="hidden" />
                 
