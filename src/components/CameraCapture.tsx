@@ -209,7 +209,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
 
           {!photo ? (
             <div className="space-y-4">
-              <div className="relative bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
+              <div className="relative bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '9/16' }}>
                 <video
                   ref={videoRef}
                   className="w-full h-full object-cover"
