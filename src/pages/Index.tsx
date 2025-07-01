@@ -301,11 +301,11 @@ const Index = () => {
                     value={fiscalPrefeitura}
                     onChange={(e) => setFiscalPrefeitura(e.target.value)}
                     placeholder="Nome do fiscal"
-                    className="bg-gray-50"
-                    readOnly
+                    className={isOnline ? "bg-gray-50" : ""}
+                    readOnly={isOnline}
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Preenchido automaticamente com seu nome
+                    {isOnline ? "Preenchido automaticamente com seu nome" : "Campo habilitado para edição (modo offline)"}
                   </p>
                 </div>
               </div>
@@ -460,11 +460,11 @@ const Index = () => {
                   value={fiscalNome}
                   onChange={(e) => setFiscalNome(e.target.value)}
                   placeholder="Nome completo do fiscal"
-                  className="bg-gray-50"
-                  readOnly
+                  className={isOnline ? "bg-gray-50" : ""}
+                  readOnly={isOnline}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Preenchido automaticamente com seu nome
+                  {isOnline ? "Preenchido automaticamente com seu nome" : "Campo habilitado para edição (modo offline)"}
                 </p>
               </div>
 
