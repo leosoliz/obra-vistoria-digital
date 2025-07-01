@@ -97,12 +97,12 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
     // Logotipo
     const logo = new Image();
     logo.onload = () => {
-      overlayCtx.drawImage(logo, 20, 20, 40, 40);
+      overlayCtx.drawImage(logo, 20, 20, 60, 60);
       
       // Texto
       overlayCtx.fillStyle = 'white';
       overlayCtx.font = '12px Arial';
-      overlayCtx.fillText('Prefeitura de Presidente Getúlio', 70, 35);
+      overlayCtx.fillText('PMPG - Planejamento Urbano', 70, 35);
       
       if (latitude && longitude) {
         overlayCtx.fillText(`GPS: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`, 70, 55);
