@@ -102,13 +102,13 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
       // Texto
       overlayCtx.fillStyle = 'white';
       overlayCtx.font = '12px Arial';
-      overlayCtx.fillText('PMPG - Planejamento Urbano', 70, 35);
+      overlayCtx.fillText('PMPG - Planejamento Urbano', 80, 35);
       
       if (latitude && longitude) {
-        overlayCtx.fillText(`GPS: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`, 70, 55);
+        overlayCtx.fillText(`GPS: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`, 80, 55);
       }
       
-      overlayCtx.fillText(`Data: ${new Date().toLocaleString('pt-BR')}`, 70, 75);
+      overlayCtx.fillText(`Data: ${new Date().toLocaleString('pt-BR')}`, 80, 75);
 
       // Combinar canvas principal com overlay
       ctx.drawImage(overlayCanvas, 0, 0);
@@ -224,13 +224,13 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
                 
                 {/* Overlay visível durante o streaming */}
                 <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white p-2 rounded text-xs max-w-xs">
-                  <div className="flex items-center gap-2 mb-1">
-                    <img 
+                  <img 
                       src="/lovable-uploads/b69256d9-aadd-4837-8726-b2ac0e97cc7e.png" 
                       alt="Logo" 
                       className="w-6 h-6"
                     />
-                    <span className="font-semibold">Prefeitura de Presidente Getúlio</span>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-semibold">PMPG - Planejamento Urbano</span>
                   </div>
                   {latitude && longitude && (
                     <div>GPS: {latitude.toFixed(6)}, {longitude.toFixed(6)}</div>
