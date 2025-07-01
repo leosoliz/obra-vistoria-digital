@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,15 +19,24 @@ import { RegistroFotograficoForm } from "@/components/forms/RegistroFotograficoF
 import { ArrowLeft, Wifi, WifiOff } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
+interface CapturedPhoto {
+  file: File;
+  preview: string;
+  legenda: string;
+}
+
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { salvarVistoria, adicionarFoto, fotos, isLoading: isSaving } = useVistoria();
+  const { salvarVistoria, adicionarFoto, fotos: fotosOnline, isLoading: isSaving } = useVistoria();
   const { autocompleteData } = useAutocomplete();
   const { latitude, longitude, error: locationError, requestLocation, formatLocationString } = useGeolocation();
   const { profile } = useUserProfile();
   const { saveOfflineVistoria, getPendingVistorias, syncPendingVistorias, isOnline } = useOfflineStorage();
 
+  // Estado local para fotos (usado tanto online quanto offline)
+  const [fotosLocais, setFotosLocais] = useState<CapturedPhoto[]>([]);
+  
   const [nomeObra, setNomeObra] = useState("");
   const [localizacao, setLocalizacao] = useState("");
   const [numeroContrato, setNumeroContrato] = useState("");
@@ -65,7 +73,6 @@ const Index = () => {
     requestLocation();
   }, [requestLocation]);
 
-  // Preencher automaticamente os campos do fiscal com o nome do usuário
   useEffect(() => {
     if (profile?.full_name) {
       setFiscalPrefeitura(profile.full_name);
@@ -73,7 +80,6 @@ const Index = () => {
     }
   }, [profile]);
 
-  // Atualizar localização com coordenadas GPS quando disponíveis
   useEffect(() => {
     if (latitude && longitude) {
       const coordenadas = formatLocationString(latitude, longitude);
@@ -83,7 +89,6 @@ const Index = () => {
     }
   }, [latitude, longitude, formatLocationString, localizacao]);
 
-  // Sincronizar dados pendentes quando online
   useEffect(() => {
     if (isOnline) {
       syncPendingVistorias();
@@ -135,7 +140,7 @@ const Index = () => {
       detalhesPendencias,
       recomendacoes,
       fiscalNome,
-      fiscalMatricula: "", // Campo removido mas mantido vazio para compatibilidade
+      fiscalMatricula: "",
       representanteNome,
       representanteCargo,
       latitude,
@@ -144,14 +149,23 @@ const Index = () => {
 
     try {
       if (isOnline) {
-        // Tentar salvar online
+        // Modo online: adicionar fotos ao hook useVistoria antes de salvar
+        fotosLocais.forEach(foto => {
+          adicionarFoto(foto);
+        });
+        
         const result = await salvarVistoria(vistoriaData);
         if (result) {
           navigate('/vistorias');
         }
       } else {
-        // Salvar offline
-        await saveOfflineVistoria(vistoriaData, fotos);
+        // Modo offline: salvar dados e fotos localmente
+        console.log('Salvando vistoria offline com fotos:', { 
+          vistoriaData, 
+          fotosCount: fotosLocais.length 
+        });
+        
+        await saveOfflineVistoria(vistoriaData, fotosLocais);
         toast({
           title: "Vistoria salva offline",
           description: "A vistoria será sincronizada quando a conexão retornar.",
@@ -162,7 +176,7 @@ const Index = () => {
       // Se falhou online, tenta salvar offline
       if (isOnline) {
         console.log('Falha ao salvar online, tentando offline...');
-        await saveOfflineVistoria(vistoriaData, fotos);
+        await saveOfflineVistoria(vistoriaData, fotosLocais);
         toast({
           title: "Salvo offline",
           description: "Erro na conexão. Vistoria salva localmente e será sincronizada automaticamente.",
@@ -178,18 +192,28 @@ const Index = () => {
       fileSize: photo.file.size,
       fileName: photo.file.name,
       legenda: photo.legenda,
-      previewLength: photo.preview.length
+      previewLength: photo.preview.length,
+      isOnline
     });
     
-    adicionarFoto(photo);
+    // Adicionar foto ao estado local (funciona tanto online quanto offline)
+    setFotosLocais(prev => [...prev, photo]);
+    
+    // Se estiver online, também adicionar ao hook useVistoria
+    if (isOnline) {
+      adicionarFoto(photo);
+    }
+    
     setShowCamera(false);
     
-    console.log('Foto adicionada, modal fechado');
+    console.log('Foto adicionada localmente, modal fechado');
   };
+
+  // Determinar quais fotos mostrar: online usa fotosOnline + fotosLocais, offline usa apenas fotosLocais
+  const fotosParaExibir = isOnline ? [...fotosOnline, ...fotosLocais] : fotosLocais;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-4xl mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
@@ -320,7 +344,7 @@ const Index = () => {
           />
 
           <RegistroFotograficoForm
-            fotos={fotos}
+            fotos={fotosParaExibir}
             onCapturarFoto={() => setShowCamera(true)}
           />
 

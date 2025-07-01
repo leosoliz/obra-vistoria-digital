@@ -4,10 +4,16 @@ import { useAuth } from './useAuth';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
+interface CapturedPhoto {
+  file: File;
+  preview: string;
+  legenda: string;
+}
+
 interface OfflineVistoriaData {
   id: string;
   data: any;
-  fotos: any[];
+  fotos: CapturedPhoto[];
   timestamp: number;
   userId: string;
   synced?: boolean;
@@ -33,7 +39,6 @@ export const useOfflineStorage = () => {
     };
   }, []);
 
-  // Contar vistorias pendentes
   useEffect(() => {
     updatePendingCount();
   }, [user]);
@@ -45,10 +50,14 @@ export const useOfflineStorage = () => {
     setPendingCount(pending.length);
   };
 
-  const saveOfflineVistoria = async (vistoriaData: any, fotos: any[]): Promise<void> => {
+  const saveOfflineVistoria = async (vistoriaData: any, fotos: CapturedPhoto[]): Promise<void> => {
     if (!user) throw new Error('Usuário não autenticado');
 
-    console.log('Salvando vistoria offline:', { vistoriaData, fotosCount: fotos.length });
+    console.log('Salvando vistoria offline:', { 
+      vistoriaData, 
+      fotosCount: fotos.length,
+      fotosDetails: fotos.map(f => ({ legenda: f.legenda, size: f.file.size }))
+    });
 
     const offlineData: OfflineVistoriaData = {
       id: `offline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -66,7 +75,7 @@ export const useOfflineStorage = () => {
     localStorage.setItem('offlineVistorias', JSON.stringify(offlineVistorias));
     updatePendingCount();
     
-    console.log('Vistoria salva offline com sucesso');
+    console.log('Vistoria salva offline com sucesso, incluindo fotos');
   };
 
   const getPendingVistorias = (): OfflineVistoriaData[] => {
@@ -80,7 +89,7 @@ export const useOfflineStorage = () => {
     );
   };
 
-  const uploadFoto = async (foto: any, vistoriaId: string, ordem: number): Promise<string> => {
+  const uploadFoto = async (foto: CapturedPhoto, vistoriaId: string, ordem: number): Promise<string> => {
     console.log('Fazendo upload da foto:', { vistoriaId, ordem, fotoSize: foto.file?.size });
     
     if (!user) throw new Error('Usuário não autenticado');
@@ -156,11 +165,9 @@ export const useOfflineStorage = () => {
           data_vistoria: offlineVistoria.data.dataVistoria,
           hora_vistoria: offlineVistoria.data.horaVistoria,
           
-          // Coordenadas GPS
           latitude: offlineVistoria.data.latitude || null,
           longitude: offlineVistoria.data.longitude || null,
           
-          // Objetivos
           objetivo_inicio_obra: offlineVistoria.data.objetivoVistoria?.includes('Início de Obra') || false,
           objetivo_vistoria_rotina: offlineVistoria.data.objetivoVistoria?.includes('Vistoria de Rotina') || false,
           objetivo_medicao: offlineVistoria.data.objetivoVistoria?.includes('Medição') || false,
@@ -168,10 +175,8 @@ export const useOfflineStorage = () => {
           objetivo_encerramento: offlineVistoria.data.objetivoVistoria?.includes('Encerramento/Entrega da Obra') || false,
           objetivo_outros: offlineVistoria.data.outroObjetivo || null,
           
-          // Descrição
           descricao_atividades: offlineVistoria.data.descricaoAtividades,
           
-          // Situação
           situacao_conformidade: offlineVistoria.data.situacaoObra === 'Em Conformidade',
           situacao_pendencias: offlineVistoria.data.situacaoObra === 'Com Pendências',
           situacao_irregularidades: offlineVistoria.data.situacaoObra === 'Irregularidades Graves',
@@ -179,10 +184,8 @@ export const useOfflineStorage = () => {
           situacao_finalizada: offlineVistoria.data.situacaoObra === 'Finalizada',
           detalhes_pendencias: offlineVistoria.data.detalhesPendencias || null,
           
-          // Recomendações
           recomendacoes: offlineVistoria.data.recomendacoes || null,
           
-          // Assinaturas
           fiscal_nome: offlineVistoria.data.fiscalNome || null,
           fiscal_matricula: offlineVistoria.data.fiscalMatricula || null,
           representante_nome: offlineVistoria.data.representanteNome || null,
@@ -191,7 +194,6 @@ export const useOfflineStorage = () => {
           status: 'finalizado'
         };
 
-        // Inserir vistoria
         const { data: vistoriaResult, error: vistoriaError } = await supabase
           .from('obra_vistorias')
           .insert(vistoriaData)
