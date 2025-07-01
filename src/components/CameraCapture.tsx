@@ -197,93 +197,97 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
   }, [isCapturing, photo]);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <CardContent className="p-6">
-          <div className="flex justify-between items-center mb-4">
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-2 sm:p-4">
+      <Card className="w-full max-w-md sm:max-w-2xl h-full max-h-screen overflow-hidden flex flex-col">
+        <CardContent className="p-3 sm:p-6 flex flex-col h-full">
+          <div className="flex justify-between items-center mb-3 sm:mb-4 flex-shrink-0">
             <h3 className="text-lg font-semibold">Capturar Foto</h3>
             <Button variant="ghost" size="sm" onClick={onClose}>
               <X className="w-4 h-4" />
             </Button>
           </div>
 
-          {!photo ? (
-            <div className="space-y-4">
-              <div className="relative bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '9/16' }}>
-                <video
-                  ref={videoRef}
-                  className="w-full h-full object-cover"
-                  autoPlay
-                  playsInline
-                  muted
-                />
-                
-                {/* Canvas ocultos para captura */}
-                <canvas ref={canvasRef} className="hidden" />
-                <canvas ref={overlayCanvasRef} className="hidden" />
-                
-                {/* Overlay visível durante o streaming */}
-                <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white p-2 rounded text-xs max-w-xs">
-                  <img 
-                      src="/lovable-uploads/b69256d9-aadd-4837-8726-b2ac0e97cc7e.png" 
-                      alt="Logo" 
-                      className="w-6 h-6"
-                    />
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold">PMPG - Planejamento Urbano</span>
+          <div className="flex-1 flex flex-col min-h-0">
+            {!photo ? (
+              <div className="space-y-3 sm:space-y-4 flex flex-col h-full">
+                <div className="relative bg-black rounded-lg overflow-hidden flex-1" style={{ minHeight: '60vh', maxHeight: '70vh' }}>
+                  <video
+                    ref={videoRef}
+                    className="w-full h-full object-cover"
+                    autoPlay
+                    playsInline
+                    muted
+                  />
+                  
+                  {/* Canvas ocultos para captura */}
+                  <canvas ref={canvasRef} className="hidden" />
+                  <canvas ref={overlayCanvasRef} className="hidden" />
+                  
+                  {/* Overlay visível durante o streaming */}
+                  <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white p-2 rounded text-xs max-w-xs">
+                    <div className="flex items-center gap-2 mb-1">
+                      <img 
+                        src="/lovable-uploads/b69256d9-aadd-4837-8726-b2ac0e97cc7e.png" 
+                        alt="Logo" 
+                        className="w-6 h-6"
+                      />
+                      <span className="font-semibold text-xs">PMPG - Planejamento Urbano</span>
+                    </div>
+                    {latitude && longitude && (
+                      <div className="text-xs">GPS: {latitude.toFixed(6)}, {longitude.toFixed(6)}</div>
+                    )}
+                    <div className="text-xs">Data: {new Date().toLocaleString('pt-BR')}</div>
                   </div>
-                  {latitude && longitude && (
-                    <div>GPS: {latitude.toFixed(6)}, {longitude.toFixed(6)}</div>
-                  )}
-                  <div>Data: {new Date().toLocaleString('pt-BR')}</div>
+                </div>
+
+                <div className="flex-shrink-0">
+                  <Button onClick={capturePhoto} className="w-full" size="lg">
+                    <Camera className="w-5 h-5 mr-2" />
+                    Capturar Foto
+                  </Button>
                 </div>
               </div>
+            ) : (
+              <div className="space-y-3 sm:space-y-4 flex flex-col h-full">
+                <div className="relative flex-1" style={{ minHeight: '50vh', maxHeight: '60vh' }}>
+                  <img
+                    src={photo}
+                    alt="Foto capturada"
+                    className="w-full h-full object-contain rounded-lg"
+                  />
+                </div>
 
-              <Button onClick={capturePhoto} className="w-full" size="lg">
-                <Camera className="w-5 h-5 mr-2" />
-                Capturar Foto
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="relative">
-                <img
-                  src={photo}
-                  alt="Foto capturada"
-                  className="w-full rounded-lg"
-                />
-              </div>
+                <div className="flex-shrink-0">
+                  <Label htmlFor="legenda">Legenda da Foto</Label>
+                  <Input
+                    id="legenda"
+                    value={legenda}
+                    onChange={(e) => setLegenda(e.target.value)}
+                    placeholder="Adicione uma legenda..."
+                    className="mt-1"
+                  />
+                </div>
 
-              <div>
-                <Label htmlFor="legenda">Legenda da Foto</Label>
-                <Input
-                  id="legenda"
-                  value={legenda}
-                  onChange={(e) => setLegenda(e.target.value)}
-                  placeholder="Adicione uma legenda..."
-                  className="mt-1"
-                />
+                <div className="flex gap-2 flex-shrink-0">
+                  <Button
+                    variant="outline"
+                    onClick={retakePhoto}
+                    className="flex-1"
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Tirar Novamente
+                  </Button>
+                  <Button
+                    onClick={confirmPhoto}
+                    className="flex-1"
+                  >
+                    <Check className="w-4 h-4 mr-2" />
+                    Confirmar
+                  </Button>
+                </div>
               </div>
-
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={retakePhoto}
-                  className="flex-1"
-                >
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  Tirar Novamente
-                </Button>
-                <Button
-                  onClick={confirmPhoto}
-                  className="flex-1"
-                >
-                  <Check className="w-4 h-4 mr-2" />
-                  Confirmar
-                </Button>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
