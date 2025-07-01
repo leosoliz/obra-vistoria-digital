@@ -1,8 +1,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
-import { useVistoria } from './useVistoria';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface OfflineVistoriaData {
   id: string;
@@ -10,13 +10,14 @@ interface OfflineVistoriaData {
   fotos: any[];
   timestamp: number;
   userId: string;
+  synced?: boolean;
 }
 
 export const useOfflineStorage = () => {
   const { user } = useAuth();
-  const { salvarVistoria } = useVistoria();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingCount, setPendingCount] = useState(0);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Monitorar status da conexão
   useEffect(() => {
@@ -47,38 +48,16 @@ export const useOfflineStorage = () => {
   const saveOfflineVistoria = async (vistoriaData: any, fotos: any[]): Promise<void> => {
     if (!user) throw new Error('Usuário não autenticado');
 
+    console.log('Salvando vistoria offline:', { vistoriaData, fotosCount: fotos.length });
+
     const offlineData: OfflineVistoriaData = {
       id: `offline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       data: vistoriaData,
       fotos: fotos,
       timestamp: Date.now(),
-      userId: user.id
+      userId: user.id,
+      synced: false
     };
-
-    // Converter fotos para base64 para armazenamento local
-    const fotosBase64 = await Promise.all(
-      fotos.map(async (foto) => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const img = new Image();
-        
-        return new Promise((resolve) => {
-          img.onload = () => {
-            canvas.width = img.width;
-            canvas.height = img.height;
-            ctx?.drawImage(img, 0, 0);
-            const base64 = canvas.toDataURL('image/jpeg', 0.8);
-            resolve({
-              ...foto,
-              base64: base64
-            });
-          };
-          img.src = foto.preview;
-        });
-      })
-    );
-
-    offlineData.fotos = fotosBase64;
 
     const existingData = localStorage.getItem('offlineVistorias') || '[]';
     const offlineVistorias = JSON.parse(existingData);
@@ -86,6 +65,8 @@ export const useOfflineStorage = () => {
     
     localStorage.setItem('offlineVistorias', JSON.stringify(offlineVistorias));
     updatePendingCount();
+    
+    console.log('Vistoria salva offline com sucesso');
   };
 
   const getPendingVistorias = (): OfflineVistoriaData[] => {
@@ -95,71 +76,194 @@ export const useOfflineStorage = () => {
     const offlineVistorias = JSON.parse(existingData);
     
     return offlineVistorias.filter((vistoria: OfflineVistoriaData) => 
-      vistoria.userId === user.id
+      vistoria.userId === user.id && !vistoria.synced
     );
   };
 
+  const uploadFoto = async (foto: any, vistoriaId: string, ordem: number): Promise<string> => {
+    console.log('Fazendo upload da foto:', { vistoriaId, ordem, fotoSize: foto.file?.size });
+    
+    if (!user) throw new Error('Usuário não autenticado');
+    
+    const fileName = `${user.id}/${vistoriaId}/${Date.now()}-${ordem}.jpg`;
+    
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('vistoria-fotos')
+      .upload(fileName, foto.file);
+
+    if (uploadError) {
+      console.error('Erro no upload da foto:', uploadError);
+      throw uploadError;
+    }
+
+    console.log('Upload da foto concluído:', uploadData);
+
+    const { data: urlData } = supabase.storage
+      .from('vistoria-fotos')
+      .getPublicUrl(fileName);
+
+    const { error: dbError } = await supabase
+      .from('vistoria_fotos')
+      .insert({
+        vistoria_id: vistoriaId,
+        arquivo_url: urlData.publicUrl,
+        legenda: foto.legenda || '',
+        ordem: ordem,
+        tamanho_arquivo: foto.file?.size || 0,
+        tipo_arquivo: foto.file?.type || 'image/jpeg'
+      });
+
+    if (dbError) {
+      console.error('Erro ao salvar foto no banco:', dbError);
+      throw dbError;
+    }
+
+    console.log('Foto salva no banco com sucesso');
+    return urlData.publicUrl;
+  };
+
   const syncPendingVistorias = useCallback(async (): Promise<void> => {
-    if (!user || !isOnline) return;
+    if (!user || !isOnline || isSyncing) {
+      console.log('Sincronização cancelada:', { user: !!user, isOnline, isSyncing });
+      return;
+    }
 
     const pendingVistorias = getPendingVistorias();
-    if (pendingVistorias.length === 0) return;
+    if (pendingVistorias.length === 0) {
+      console.log('Nenhuma vistoria pendente para sincronizar');
+      return;
+    }
 
-    console.log(`Sincronizando ${pendingVistorias.length} vistorias pendentes...`);
+    console.log(`Iniciando sincronização de ${pendingVistorias.length} vistorias pendentes...`);
+    setIsSyncing(true);
+
+    let syncedCount = 0;
+    let errorCount = 0;
 
     for (const offlineVistoria of pendingVistorias) {
       try {
-        // Reconverter fotos base64 para File objects
-        const fotosReconstruidas = offlineVistoria.fotos.map((foto: any) => {
-          if (foto.base64) {
-            // Converter base64 para blob
-            const arr = foto.base64.split(',');
-            const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
-            const bstr = atob(arr[1]);
-            let n = bstr.length;
-            const u8arr = new Uint8Array(n);
-            while (n--) {
-              u8arr[n] = bstr.charCodeAt(n);
+        console.log(`Sincronizando vistoria ${offlineVistoria.id}...`);
+
+        // Preparar dados para o banco
+        const vistoriaData = {
+          user_id: user.id,
+          nome_obra: offlineVistoria.data.nomeObra,
+          localizacao: offlineVistoria.data.localizacao,
+          numero_contrato: offlineVistoria.data.numeroContrato || null,
+          empresa_responsavel: offlineVistoria.data.empresaResponsavel || null,
+          engenheiro_responsavel: offlineVistoria.data.engenheiroResponsavel || null,
+          fiscal_prefeitura: offlineVistoria.data.fiscalPrefeitura || null,
+          data_vistoria: offlineVistoria.data.dataVistoria,
+          hora_vistoria: offlineVistoria.data.horaVistoria,
+          
+          // Coordenadas GPS
+          latitude: offlineVistoria.data.latitude || null,
+          longitude: offlineVistoria.data.longitude || null,
+          
+          // Objetivos
+          objetivo_inicio_obra: offlineVistoria.data.objetivoVistoria?.includes('Início de Obra') || false,
+          objetivo_vistoria_rotina: offlineVistoria.data.objetivoVistoria?.includes('Vistoria de Rotina') || false,
+          objetivo_medicao: offlineVistoria.data.objetivoVistoria?.includes('Medição') || false,
+          objetivo_vistoria_tecnica: offlineVistoria.data.objetivoVistoria?.includes('Vistoria Técnica/Análise de Conformidade') || false,
+          objetivo_encerramento: offlineVistoria.data.objetivoVistoria?.includes('Encerramento/Entrega da Obra') || false,
+          objetivo_outros: offlineVistoria.data.outroObjetivo || null,
+          
+          // Descrição
+          descricao_atividades: offlineVistoria.data.descricaoAtividades,
+          
+          // Situação
+          situacao_conformidade: offlineVistoria.data.situacaoObra === 'Em Conformidade',
+          situacao_pendencias: offlineVistoria.data.situacaoObra === 'Com Pendências',
+          situacao_irregularidades: offlineVistoria.data.situacaoObra === 'Irregularidades Graves',
+          situacao_paralisada: offlineVistoria.data.situacaoObra === 'Paralisada',
+          situacao_finalizada: offlineVistoria.data.situacaoObra === 'Finalizada',
+          detalhes_pendencias: offlineVistoria.data.detalhesPendencias || null,
+          
+          // Recomendações
+          recomendacoes: offlineVistoria.data.recomendacoes || null,
+          
+          // Assinaturas
+          fiscal_nome: offlineVistoria.data.fiscalNome || null,
+          fiscal_matricula: offlineVistoria.data.fiscalMatricula || null,
+          representante_nome: offlineVistoria.data.representanteNome || null,
+          representante_cargo: offlineVistoria.data.representanteCargo || null,
+          
+          status: 'finalizado'
+        };
+
+        // Inserir vistoria
+        const { data: vistoriaResult, error: vistoriaError } = await supabase
+          .from('obra_vistorias')
+          .insert(vistoriaData)
+          .select('id')
+          .single();
+
+        if (vistoriaError) {
+          console.error('Erro ao inserir vistoria:', vistoriaError);
+          throw vistoriaError;
+        }
+
+        console.log(`Vistoria inserida com ID: ${vistoriaResult.id}`);
+
+        // Upload das fotos se existirem
+        if (offlineVistoria.fotos && offlineVistoria.fotos.length > 0) {
+          console.log(`Fazendo upload de ${offlineVistoria.fotos.length} fotos...`);
+          
+          for (let i = 0; i < offlineVistoria.fotos.length; i++) {
+            const foto = offlineVistoria.fotos[i];
+            try {
+              await uploadFoto(foto, vistoriaResult.id, i + 1);
+              console.log(`Foto ${i + 1} enviada com sucesso`);
+            } catch (fotoError) {
+              console.error(`Erro ao enviar foto ${i + 1}:`, fotoError);
+              // Continua mesmo se uma foto falhar
             }
-            const blob = new Blob([u8arr], { type: mime });
-            const file = new File([blob], `foto_${Date.now()}.jpg`, { type: mime });
-            
-            return {
-              file: file,
-              preview: foto.base64,
-              legenda: foto.legenda
-            };
           }
-          return foto;
-        });
+        }
 
-        // Temporariamente adicionar as fotos ao hook useVistoria
-        fotosReconstruidas.forEach((foto: any) => {
-          // Simular adição de foto (isso precisa ser ajustado conforme a implementação do useVistoria)
-        });
-
-        await salvarVistoria(offlineVistoria.data);
-        
-        // Remove da lista de pendentes
-        removePendingVistoria(offlineVistoria.id);
+        // Marcar como sincronizada
+        markVistoriaAsSynced(offlineVistoria.id);
+        syncedCount++;
         
         console.log(`Vistoria ${offlineVistoria.id} sincronizada com sucesso`);
         
       } catch (error) {
         console.error(`Erro ao sincronizar vistoria ${offlineVistoria.id}:`, error);
-        // Mantém na lista para tentar novamente depois
+        errorCount++;
       }
     }
 
+    setIsSyncing(false);
     updatePendingCount();
 
-    if (pendingCount > 0) {
+    if (syncedCount > 0) {
       toast({
         title: "Sincronização concluída",
-        description: `${pendingVistorias.length - pendingCount} vistorias foram sincronizadas.`,
+        description: `${syncedCount} vistoria(s) foram sincronizadas com sucesso.`,
       });
     }
-  }, [user, isOnline, salvarVistoria, pendingCount]);
+
+    if (errorCount > 0) {
+      toast({
+        title: "Alguns erros ocorreram",
+        description: `${errorCount} vistoria(s) falharam na sincronização.`,
+        variant: "destructive"
+      });
+    }
+
+    console.log(`Sincronização finalizada: ${syncedCount} sucesso, ${errorCount} erro(s)`);
+  }, [user, isOnline, isSyncing]);
+
+  const markVistoriaAsSynced = (vistoriaId: string): void => {
+    const existingData = localStorage.getItem('offlineVistorias') || '[]';
+    const offlineVistorias = JSON.parse(existingData);
+    
+    const updatedVistorias = offlineVistorias.map((vistoria: OfflineVistoriaData) => 
+      vistoria.id === vistoriaId ? { ...vistoria, synced: true } : vistoria
+    );
+    
+    localStorage.setItem('offlineVistorias', JSON.stringify(updatedVistorias));
+  };
 
   const removePendingVistoria = (vistoriaId: string): void => {
     const existingData = localStorage.getItem('offlineVistorias') || '[]';
@@ -190,6 +294,7 @@ export const useOfflineStorage = () => {
   return {
     isOnline,
     pendingCount,
+    isSyncing,
     saveOfflineVistoria,
     getPendingVistorias,
     syncPendingVistorias,

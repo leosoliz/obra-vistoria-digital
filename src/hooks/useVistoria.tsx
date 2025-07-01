@@ -4,8 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from '@/hooks/use-toast';
 
-
-
 interface VistoriaData {
   // Identificação da obra
   nomeObra: string;
@@ -55,13 +53,19 @@ export const useVistoria = () => {
 
   const uploadFoto = async (foto: CapturedPhoto, vistoriaId: string, ordem: number) => {
     if (!user) throw new Error('Usuário não autenticado');
-    const fileName = `${user.id}/${vistoriaId}/${Date.now()}-${ordem}.png`;
+    
+    console.log('Fazendo upload da foto:', { vistoriaId, ordem });
+    
+    const fileName = `${user.id}/${vistoriaId}/${Date.now()}-${ordem}.jpg`;
     
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('vistoria-fotos')
       .upload(fileName, foto.file);
 
-    if (uploadError) throw uploadError;
+    if (uploadError) {
+      console.error('Erro no upload:', uploadError);
+      throw uploadError;
+    }
 
     const { data: urlData } = supabase.storage
       .from('vistoria-fotos')
@@ -78,8 +82,12 @@ export const useVistoria = () => {
         tipo_arquivo: foto.file.type
       });
 
-    if (dbError) throw dbError;
+    if (dbError) {
+      console.error('Erro ao salvar foto no banco:', dbError);
+      throw dbError;
+    }
 
+    console.log('Foto salva com sucesso');
     return urlData.publicUrl;
   };
 
@@ -96,6 +104,8 @@ export const useVistoria = () => {
     setIsLoading(true);
 
     try {
+      console.log('Salvando vistoria online:', data);
+
       // Preparar dados para o banco
       const vistoriaData = {
         user_id: user.id,
@@ -150,11 +160,19 @@ export const useVistoria = () => {
         .select('id')
         .single();
 
-      if (vistoriaError) throw vistoriaError;
+      if (vistoriaError) {
+        console.error('Erro ao inserir vistoria:', vistoriaError);
+        throw vistoriaError;
+      }
+
+      console.log('Vistoria inserida com ID:', vistoriaResult.id);
 
       // Upload das fotos
-      for (let i = 0; i < fotos.length; i++) {
-        await uploadFoto(fotos[i], vistoriaResult.id, i + 1);
+      if (fotos.length > 0) {
+        console.log(`Fazendo upload de ${fotos.length} fotos...`);
+        for (let i = 0; i < fotos.length; i++) {
+          await uploadFoto(fotos[i], vistoriaResult.id, i + 1);
+        }
       }
 
       toast({
@@ -169,18 +187,14 @@ export const useVistoria = () => {
 
     } catch (error) {
       console.error('Erro ao salvar vistoria:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao salvar relatório. Tente novamente.",
-        variant: "destructive"
-      });
-      return null;
+      throw error; // Re-throw para permitir tratamento no componente
     } finally {
       setIsLoading(false);
     }
   };
 
   const adicionarFoto = (foto: CapturedPhoto) => {
+    console.log('Adicionando foto:', { legenda: foto.legenda, fileSize: foto.file.size });
     setFotos(prev => [...prev, foto]);
   };
 
