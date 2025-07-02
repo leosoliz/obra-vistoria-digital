@@ -332,8 +332,8 @@ const VistoriasList = () => {
                   )}
                 </Button>
               </div>
-            </Card>
-          </div>
+            </CardContent>
+          </Card>
         )}
 
         <Card className="mb-6">
