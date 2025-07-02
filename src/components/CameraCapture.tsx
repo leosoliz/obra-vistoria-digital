@@ -122,7 +122,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
       stopCamera();
     };
     
-    logo.src = '/lovable-uploads/b69256d9-aadd-4837-8726-b2ac0e97cc7e.png';
+    logo.src = '/lovable-uploads/865d3185-5d6c-416e-b9e1-79be88c6a8bd.png';
   };
 
   const retakePhoto = () => {
@@ -178,12 +178,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
 
     onCapture(photoData);
     
-    console.log('onCapture executado, limpando estado...');
-    
-    // Limpar estado e fechar
-    setPhoto(null);
-    setLegenda('');
-    setIsCapturing(false);
+    console.log('onCapture executado, chamando onClose...');
+    onClose();
   };
 
   useEffect(() => {
@@ -227,7 +223,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
                   <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white p-2 rounded text-xs max-w-xs">
                     <div className="flex items-center gap-2 mb-1">
                       <img 
-                        src="/lovable-uploads/b69256d9-aadd-4837-8726-b2ac0e97cc7e.png" 
+                        src="/lovable-uploads/865d3185-5d6c-416e-b9e1-79be88c6a8bd.png" 
                         alt="Logo" 
                         className="w-6 h-6"
                       />

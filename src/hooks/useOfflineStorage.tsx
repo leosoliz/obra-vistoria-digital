@@ -16,7 +16,7 @@ interface OfflineVistoriaData {
   fotos: CapturedPhoto[];
   timestamp: number;
   userId: string;
-  synced?: boolean;
+  synced: boolean;
 }
 
 export const useOfflineStorage = () => {
@@ -48,6 +48,7 @@ export const useOfflineStorage = () => {
     
     const pending = getPendingVistorias();
     setPendingCount(pending.length);
+    console.log('Contagem atualizada de vistorias pendentes:', pending.length);
   };
 
   const saveOfflineVistoria = async (vistoriaData: any, fotos: CapturedPhoto[]): Promise<void> => {

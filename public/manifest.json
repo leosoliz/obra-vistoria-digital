@@ -2,7 +2,7 @@
 {
   "name": "Sistema de Vistoria de Obras",
   "short_name": "Vistoria Obras",
-  "description": "Sistema PWA para Relatórios de Vistoria de Obras da Prefeitura Municipal",
+  "description": "Sistema PWA para Relatórios de Vistoria de Obras da Prefeitura Municipal de Presidente Getúlio",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -10,15 +10,15 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/placeholder.svg",
+      "src": "/lovable-uploads/865d3185-5d6c-416e-b9e1-79be88c6a8bd.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/placeholder.svg", 
+      "src": "/lovable-uploads/865d3185-5d6c-416e-b9e1-79be88c6a8bd.png", 
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ],
@@ -27,11 +27,11 @@
   "scope": "/",
   "screenshots": [
     {
-      "src": "/placeholder.svg",
-      "sizes": "1280x720",
-      "type": "image/svg+xml",
+      "src": "/lovable-uploads/865d3185-5d6c-416e-b9e1-79be88c6a8bd.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "platform": "wide",
-      "label": "Sistema de Vistoria de Obras"
+      "label": "Sistema de Vistoria de Obras - Presidente Getúlio"
     }
   ]
 }

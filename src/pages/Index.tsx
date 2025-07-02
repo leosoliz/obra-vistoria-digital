@@ -34,8 +34,8 @@ const Index = () => {
   const { profile } = useUserProfile();
   const { saveOfflineVistoria, getPendingVistorias, syncPendingVistorias, isOnline } = useOfflineStorage();
 
-  // Estado local para fotos (usado tanto online quanto offline)
-  const [fotosLocais, setFotosLocais] = useState<CapturedPhoto[]>([]);
+  // Estado único para fotos (funciona tanto online quanto offline)
+  const [fotos, setFotos] = useState<CapturedPhoto[]>([]);
   
   const [nomeObra, setNomeObra] = useState("");
   const [localizacao, setLocalizacao] = useState("");
@@ -150,7 +150,7 @@ const Index = () => {
     try {
       if (isOnline) {
         // Modo online: adicionar fotos ao hook useVistoria antes de salvar
-        fotosLocais.forEach(foto => {
+        fotos.forEach(foto => {
           adicionarFoto(foto);
         });
         
@@ -162,10 +162,10 @@ const Index = () => {
         // Modo offline: salvar dados e fotos localmente
         console.log('Salvando vistoria offline com fotos:', { 
           vistoriaData, 
-          fotosCount: fotosLocais.length 
+          fotosCount: fotos.length 
         });
         
-        await saveOfflineVistoria(vistoriaData, fotosLocais);
+        await saveOfflineVistoria(vistoriaData, fotos);
         toast({
           title: "Vistoria salva offline",
           description: "A vistoria será sincronizada quando a conexão retornar.",
@@ -176,7 +176,7 @@ const Index = () => {
       // Se falhou online, tenta salvar offline
       if (isOnline) {
         console.log('Falha ao salvar online, tentando offline...');
-        await saveOfflineVistoria(vistoriaData, fotosLocais);
+        await saveOfflineVistoria(vistoriaData, fotos);
         toast({
           title: "Salvo offline",
           description: "Erro na conexão. Vistoria salva localmente e será sincronizada automaticamente.",
@@ -192,25 +192,15 @@ const Index = () => {
       fileSize: photo.file.size,
       fileName: photo.file.name,
       legenda: photo.legenda,
-      previewLength: photo.preview.length,
-      isOnline
+      previewLength: photo.preview.length
     });
     
-    // Adicionar foto ao estado local (funciona tanto online quanto offline)
-    setFotosLocais(prev => [...prev, photo]);
-    
-    // Se estiver online, também adicionar ao hook useVistoria
-    if (isOnline) {
-      adicionarFoto(photo);
-    }
-    
+    // Adicionar foto apenas ao estado local (único ponto de armazenamento)
+    setFotos(prev => [...prev, photo]);
     setShowCamera(false);
     
     console.log('Foto adicionada localmente, modal fechado');
   };
-
-  // Determinar quais fotos mostrar: online usa fotosOnline + fotosLocais, offline usa apenas fotosLocais
-  const fotosParaExibir = isOnline ? [...fotosOnline, ...fotosLocais] : fotosLocais;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -344,7 +334,7 @@ const Index = () => {
           />
 
           <RegistroFotograficoForm
-            fotos={fotosParaExibir}
+            fotos={fotos}
             onCapturarFoto={() => setShowCamera(true)}
           />
 
