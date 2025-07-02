@@ -1,23 +1,96 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { useVistoria } from "@/hooks/useVistoria";
-import { useAutocomplete } from "@/hooks/useAutocomplete";
-import { useGeolocation } from "@/hooks/useGeolocation";
-import { useUserProfile } from "@/hooks/useUserProfile";
-import { useOfflineStorage } from "@/hooks/useOfflineStorage";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CameraCapture } from "@/components/CameraCapture";
-import { IdentificacaoObraForm } from "@/components/forms/IdentificacaoObraForm";
-import { ObjetivosVistoriaForm } from "@/components/forms/ObjetivosVistoriaForm";
-import { SituacaoObraForm } from "@/components/forms/SituacaoObraForm";
-import { AssinaturasForm } from "@/components/forms/AssinaturasForm";
-import { RegistroFotograficoForm } from "@/components/forms/RegistroFotograficoForm";
-import { ArrowLeft, Wifi, WifiOff } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { useAuth } from '@/hooks/useAuth';
+import { useVistoria } from '@/hooks/useVistoria';
+import { useOfflineStorage } from '@/hooks/useOfflineStorage';
+import { useGeolocation } from '@/hooks/useGeolocation';
+import { toast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Form } from '@/components/ui/form';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge'; 
+import IdentificacaoObraForm from '@/components/forms/IdentificacaoObraForm';
+import ObjetivosVistoriaForm from '@/components/forms/ObjetivosVistoriaForm';
+import SituacaoObraForm from '@/components/forms/SituacaoObraForm';
+import AssinaturasForm from '@/components/forms/AssinaturasForm';
+import RegistroFotograficoForm from '@/components/forms/RegistroFotograficoForm';
+import { Save, Send, MapPin, LogOut, List, Wifi, WifiOff } from 'lucide-react';
+
+interface Coordinates {
+  latitude: number;
+  longitude: number;
+}
+
+interface VistoriaData {
+  // Identificação da obra
+  nomeObra: string;
+  localizacao: string;
+  numeroContrato: string;
+  empresaResponsavel: string;
+  engenheiroResponsavel: string;
+  fiscalPrefeitura: string;
+  dataVistoria: string;
+  horaVistoria: string;
+  
+  // Objetivos
+  objetivoVistoria: string[];
+  outroObjetivo: string;
+  
+  // Descrição
+  descricaoAtividades: string;
+  
+  // Situação
+  situacaoObra: string;
+  detalhesPendencias: string;
+  
+  // Recomendações
+  recomendacoes: string;
+  
+  // Assinaturas
+  fiscalNome: string;
+  fiscalMatricula: string;
+  representanteNome: string;
+  representanteCargo: string;
+
+  // Coordenadas GPS
+  latitude?: number;
+  longitude?: number;
+}
+
+const vistoriaSchema = z.object({
+  // Identificação da obra
+  nomeObra: z.string().min(1, 'Nome da obra é obrigatório'),
+  localizacao: z.string().min(1, 'Localização é obrigatória'),
+  numeroContrato: z.string().optional(),
+  empresaResponsavel: z.string().optional(),
+  engenheiroResponsavel: z.string().optional(),
+  fiscalPrefeitura: z.string().optional(),
+  dataVistoria: z.string().min(1, 'Data da vistoria é obrigatória'),
+  horaVistoria: z.string().min(1, 'Hora da vistoria é obrigatória'),
+  
+  // Objetivos
+  objetivoVistoria: z.array(z.string()).min(1, 'Selecione pelo menos um objetivo'),
+  outroObjetivo: z.string().optional(),
+  
+  // Descrição
+  descricaoAtividades: z.string().min(1, 'Descrição das atividades é obrigatória'),
+  
+  // Situação
+  situacaoObra: z.string().min(1, 'Situação da obra é obrigatória'),
+  detalhesPendencias: z.string().optional(),
+  
+  // Recomendações
+  recomendacoes: z.string().optional(),
+  
+  // Assinaturas
+  fiscalNome: z.string().optional(),
+  fiscalMatricula: z.string().optional(),
+  representanteNome: z.string().optional(),
+  representanteCargo: z.string().optional(),
+});
 
 interface CapturedPhoto {
   file: File;
@@ -28,344 +101,357 @@ interface CapturedPhoto {
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { salvarVistoria, isLoading: isSaving } = useVistoria();
-  const { autocompleteData } = useAutocomplete();
-  const { latitude, longitude, error: locationError, requestLocation, formatLocationString } = useGeolocation();
-  const { profile } = useUserProfile();
-  const { saveOfflineVistoria, getPendingVistorias, syncPendingVistorias, isOnline } = useOfflineStorage();
+  const { salvarVistoria, isLoading } = useVistoria();
+  const { 
+    isOnline, 
+    saveOfflineVistoria 
+  } = useOfflineStorage();
+  const { coordinates, getLocation, isLoading: gpsLoading } = useGeolocation();
+  
+  const [currentStep, setCurrentStep] = useState(1);
+  const [fotosCapturadas, setFotosCapturadas] = useState<CapturedPhoto[]>([]);
 
-  // Estado único para fotos - funciona tanto online quanto offline
-  const [fotos, setFotos] = useState<CapturedPhoto[]>([]);
-  
-  const [nomeObra, setNomeObra] = useState("");
-  const [localizacao, setLocalizacao] = useState("");
-  const [numeroContrato, setNumeroContrato] = useState("");
-  const [empresaResponsavel, setEmpresaResponsavel] = useState("");
-  const [engenheiroResponsavel, setEngenheiroResponsavel] = useState("");
-  const [fiscalPrefeitura, setFiscalPrefeitura] = useState("");
-  const [dataVistoria, setDataVistoria] = useState("");
-  const [horaVistoria, setHoraVistoria] = useState("");
-  
-  const [objetivoVistoria, setObjetivoVistoria] = useState<string[]>([]);
-  const [outroObjetivo, setOutroObjetivo] = useState("");
-  
-  const [descricaoAtividades, setDescricaoAtividades] = useState("");
-  
-  const [situacaoObra, setSituacaoObra] = useState("");
-  const [detalhesPendencias, setDetalhesPendencias] = useState("");
-  
-  const [recomendacoes, setRecomendacoes] = useState("");
-  
-  const [fiscalNome, setFiscalNome] = useState("");
-  const [representanteNome, setRepresentanteNome] = useState("");
-  const [representanteCargo, setRepresentanteCargo] = useState("");
-
-  const [showCamera, setShowCamera] = useState(false);
+  const form = useForm<z.infer<typeof vistoriaSchema>>({
+    resolver: zodResolver(vistoriaSchema),
+    defaultValues: {
+      nomeObra: '',
+      localizacao: '',
+      numeroContrato: '',
+      empresaResponsavel: '',
+      engenheiroResponsavel: '',
+      fiscalPrefeitura: '',
+      dataVistoria: new Date().toISOString().split('T')[0],
+      horaVistoria: new Date().toLocaleTimeString('pt-BR', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false 
+      }),
+      objetivoVistoria: [],
+      outroObjetivo: '',
+      descricaoAtividades: '',
+      situacaoObra: '',
+      detalhesPendencias: '',
+      recomendacoes: '',
+      fiscalNome: '',
+      fiscalMatricula: '',
+      representanteNome: '',
+      representanteCargo: '',
+    },
+    mode: 'onChange'
+  });
 
   useEffect(() => {
-    const now = new Date();
-    const today = now.toISOString().split('T')[0];
-    const currentTime = now.toTimeString().slice(0, 5);
-    
-    setDataVistoria(today);
-    setHoraVistoria(currentTime);
-    
-    requestLocation();
-  }, [requestLocation]);
+    getLocation();
+  }, []);
 
-  useEffect(() => {
-    if (profile?.full_name) {
-      setFiscalPrefeitura(profile.full_name);
-      setFiscalNome(profile.full_name);
-    }
-  }, [profile]);
-
-  useEffect(() => {
-    if (latitude && longitude) {
-      const coordenadas = formatLocationString(latitude, longitude);
-      if (!localizacao) {
-        setLocalizacao(coordenadas);
-      }
-    }
-  }, [latitude, longitude, formatLocationString, localizacao]);
-
-  useEffect(() => {
-    if (isOnline) {
-      syncPendingVistorias();
-    }
-  }, [isOnline, syncPendingVistorias]);
-
-  const handleObjetivoChange = (objetivo: string, checked: boolean) => {
-    if (checked) {
-      setObjetivoVistoria([...objetivoVistoria, objetivo]);
-    } else {
-      setObjetivoVistoria(objetivoVistoria.filter(obj => obj !== objetivo));
-    }
+  const handleLogout = async () => {
+    const { supabase } = await import('@/integrations/supabase/client');
+    await supabase.auth.signOut();
+    navigate('/auth');
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!nomeObra || !localizacao || !descricaoAtividades || !situacaoObra) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Por favor, preencha todos os campos obrigatórios.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (objetivoVistoria.length === 0) {
-      toast({
-        title: "Objetivo obrigatório",
-        description: "Por favor, selecione pelo menos um objetivo da vistoria.",
-        variant: "destructive"
-      });
-      return;
-    }
+  const onSubmit = async (data: z.infer<typeof vistoriaSchema>) => {
+    console.log('Submetendo dados:', data);
+    console.log('Fotos capturadas:', fotosCapturadas.length);
 
     const vistoriaData = {
-      nomeObra,
-      localizacao,
-      numeroContrato,
-      empresaResponsavel,
-      engenheiroResponsavel,
-      fiscalPrefeitura,
-      dataVistoria,
-      horaVistoria,
-      objetivoVistoria,
-      outroObjetivo,
-      descricaoAtividades,
-      situacaoObra,
-      detalhesPendencias,
-      recomendacoes,
-      fiscalNome,
-      fiscalMatricula: "",
-      representanteNome,
-      representanteCargo,
-      latitude,
-      longitude
+      ...data,
+      latitude: coordinates?.latitude,
+      longitude: coordinates?.longitude,
     };
 
     try {
       if (isOnline) {
-        // Modo online: usar hook useVistoria com upload direto
-        const result = await salvarVistoria(vistoriaData, fotos);
-        if (result) {
-          navigate('/vistorias');
+        console.log('Salvando online...');
+        const vistoriaId = await salvarVistoria(vistoriaData, fotosCapturadas);
+        
+        if (vistoriaId) {
+          form.reset();
+          setFotosCapturadas([]);
+          setCurrentStep(1);
+          
+          toast({
+            title: "Sucesso!",
+            description: "Relatório de vistoria salvo com sucesso!",
+          });
+          
+          setTimeout(() => {
+            navigate('/vistorias');
+          }, 1500);
         }
       } else {
-        // Modo offline: salvar dados e fotos localmente
-        console.log('Salvando vistoria offline com fotos:', { 
-          vistoriaData, 
-          fotosCount: fotos.length 
+        console.log('Salvando offline...');
+        await saveOfflineVistoria(vistoriaData, fotosCapturadas);
+        
+        form.reset();
+        setFotosCapturadas([]);
+        setCurrentStep(1);
+        
+        toast({
+          title: "Salvo offline!",
+          description: "Relatório salvo localmente. Será sincronizado quando houver conexão.",
         });
         
-        await saveOfflineVistoria(vistoriaData, fotos);
-        toast({
-          title: "Vistoria salva offline",
-          description: "A vistoria será sincronizada quando a conexão retornar.",
-        });
-        navigate('/vistorias');
+        setTimeout(() => {
+          navigate('/vistorias');
+        }, 1500);
       }
     } catch (error) {
-      // Se falhou online, tenta salvar offline
-      if (isOnline) {
-        console.log('Falha ao salvar online, tentando offline...');
-        await saveOfflineVistoria(vistoriaData, fotos);
-        toast({
-          title: "Salvo offline",
-          description: "Erro na conexão. Vistoria salva localmente e será sincronizada automaticamente.",
-        });
-        navigate('/vistorias');
-      }
+      console.error('Erro ao salvar vistoria:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar o relatório. Tente novamente.",
+        variant: "destructive"
+      });
     }
   };
 
-  const handleCameraCapture = (photo: { file: File; preview: string; legenda: string }) => {
-    console.log('=== HANDLE CAMERA CAPTURE ===');
-    console.log('Dados recebidos:', {
-      fileSize: photo.file.size,
-      fileName: photo.file.name,
-      legenda: photo.legenda,
-      previewLength: photo.preview.length
-    });
-    
-    // Adicionar foto ao estado local (único ponto de controle)
-    setFotos(prev => {
-      const novasFotos = [...prev, photo];
-      console.log('Fotos atualizadas:', novasFotos.length);
-      return novasFotos;
-    });
-    setShowCamera(false);
-    
-    console.log('Foto adicionada localmente, modal fechado');
+  const nextStep = () => {
+    if (currentStep < 6) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const getStepTitle = (step: number) => {
+    switch(step) {
+      case 1: return 'Identificação da Obra';
+      case 2: return 'Objetivos da Vistoria';
+      case 3: return 'Descrição das Atividades';
+      case 4: return 'Situação da Obra';
+      case 5: return 'Registro Fotográfico';
+      case 6: return 'Assinaturas';
+      default: return '';
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-4xl mx-auto px-6 py-4">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              onClick={() => navigate('/vistorias')}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Voltar
-            </Button>
-            <img 
-              src="/lovable-uploads/216f61c9-3d63-4dfe-9f04-239b1cb9cd3b.png" 
-              alt="Brasão Presidente Getúlio" 
-              className="h-12 w-12 object-contain"
-            />
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Nova Vistoria de Obra
-              </h1>
-              <p className="text-gray-600 mt-1 flex items-center gap-2">
-                Preencha os dados da vistoria
-                {isOnline ? (
-                  <span className="flex items-center gap-1 text-green-600 text-sm">
-                    <Wifi className="w-4 h-4" />
-                    Online
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1 text-orange-600 text-sm">
-                    <WifiOff className="w-4 h-4" />
-                    Offline
-                  </span>
-                )}
-              </p>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+              <img 
+                src="/lovable-uploads/216f61c9-3d63-4dfe-9f04-239b1cb9cd3b.png" 
+                alt="Brasão Presidente Getúlio" 
+                className="h-10 w-10 sm:h-12 sm:w-12 object-contain flex-shrink-0"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
+                    Nova Vistoria de Obra
+                  </h1>
+                  {/* Indicador de Status Online/Offline */}
+                  <div className="flex items-center gap-1">
+                    {isOnline ? (
+                      <Wifi className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <WifiOff className="w-4 h-4 text-red-600" />
+                    )}
+                    <span className={`text-xs font-medium ${isOnline ? 'text-green-600' : 'text-red-600'}`}>
+                      {isOnline ? 'Online' : 'Offline'}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-sm sm:text-base text-gray-600 mt-1">
+                  Prefeitura Municipal de Presidente Getúlio - SC
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => navigate('/vistorias')}
+                size="sm"
+                className="hidden sm:flex"
+              >
+                <List className="w-4 h-4 mr-2" />
+                Vistorias
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/vistorias')}
+                size="sm"
+                className="sm:hidden"
+              >
+                <List className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+                size="sm"
+                className="hidden sm:flex"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sair
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+                size="sm"
+                className="sm:hidden"
+              >
+                <LogOut className="w-4 h-4" />
+              </Button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto p-6">
-        <form onSubmit={handleSubmit} className="space-y-8">
-          <IdentificacaoObraForm
-            nomeObra={nomeObra}
-            setNomeObra={setNomeObra}
-            localizacao={localizacao}
-            setLocalizacao={setLocalizacao}
-            numeroContrato={numeroContrato}
-            setNumeroContrato={setNumeroContrato}
-            empresaResponsavel={empresaResponsavel}
-            setEmpresaResponsavel={setEmpresaResponsavel}
-            engenheiroResponsavel={engenheiroResponsavel}
-            setEngenheiroResponsavel={setEngenheiroResponsavel}
-            fiscalPrefeitura={fiscalPrefeitura}
-            setFiscalPrefeitura={setFiscalPrefeitura}
-            dataVistoria={dataVistoria}
-            setDataVistoria={setDataVistoria}
-            horaVistoria={horaVistoria}
-            setHoraVistoria={setHoraVistoria}
-            autocompleteData={autocompleteData}
-            latitude={latitude}
-            longitude={longitude}
-            locationError={locationError}
-            formatLocationString={formatLocationString}
-            isOnline={isOnline}
-          />
-
-          <ObjetivosVistoriaForm
-            objetivoVistoria={objetivoVistoria}
-            handleObjetivoChange={handleObjetivoChange}
-            outroObjetivo={outroObjetivo}
-            setOutroObjetivo={setOutroObjetivo}
-            autocompleteData={autocompleteData}
-          />
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Descrição das Atividades</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div>
-                <Label htmlFor="descricaoAtividades">Atividades Executadas *</Label>
-                <Textarea
-                  id="descricaoAtividades"
-                  value={descricaoAtividades}
-                  onChange={(e) => setDescricaoAtividades(e.target.value)}
-                  placeholder="Descreva as atividades executadas na obra..."
-                  className="min-h-[100px]"
-                  required
-                />
+      <div className="max-w-4xl mx-auto p-4 sm:p-6">
+        {/* Coordenadas GPS */}
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <MapPin className="w-5 h-5 text-blue-600" />
+                <div>
+                  <h3 className="font-semibold text-gray-900">Localização GPS</h3>
+                  {coordinates ? (
+                    <p className="text-sm text-gray-600">
+                      Lat: {coordinates.latitude.toFixed(6)}, Lng: {coordinates.longitude.toFixed(6)}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-500">
+                      {gpsLoading ? 'Obtendo localização...' : 'Localização não disponível'}
+                    </p>
+                  )}
+                </div>
               </div>
-            </CardContent>
-          </Card>
+              <Badge variant={coordinates ? 'default' : 'secondary'}>
+                {coordinates ? 'GPS Ativo' : 'GPS Inativo'}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
 
-          <SituacaoObraForm
-            situacaoObra={situacaoObra}
-            setSituacaoObra={setSituacaoObra}
-            detalhesPendencias={detalhesPendencias}
-            setDetalhesPendencias={setDetalhesPendencias}
-          />
+        {/* Indicador de Progresso */}
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-900">
+                Etapa {currentStep} de 6: {getStepTitle(currentStep)}
+              </span>
+              <span className="text-sm text-gray-500">
+                {Math.round((currentStep / 6) * 100)}%
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                style={{ width: `${(currentStep / 6) * 100}%` }}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Recomendações</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div>
-                <Label htmlFor="recomendacoes">Recomendações e Observações</Label>
-                <Textarea
-                  id="recomendacoes"
-                  value={recomendacoes}
-                  onChange={(e) => setRecomendacoes(e.target.value)}
-                  placeholder="Recomendações técnicas, prazos, observações gerais..."
-                  className="min-h-[80px]"
-                />
-              </div>
-            </CardContent>
-          </Card>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {currentStep === 1 && (
+              <IdentificacaoObraForm form={form} />
+            )}
+            
+            {currentStep === 2 && (
+              <ObjetivosVistoriaForm form={form} />
+            )}
+            
+            {currentStep === 3 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Descrição das Atividades</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 mb-2 block">
+                      Descrição detalhada das atividades encontradas na obra *
+                    </label>
+                    <textarea
+                      {...form.register('descricaoAtividades')}
+                      placeholder="Descreva detalhadamente as atividades observadas durante a vistoria..."
+                      className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[120px] resize-vertical"
+                    />
+                    {form.formState.errors.descricaoAtividades && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {form.formState.errors.descricaoAtividades.message}
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            {currentStep === 4 && (
+              <SituacaoObraForm form={form} />
+            )}
+            
+            {currentStep === 5 && (
+              <RegistroFotograficoForm 
+                fotosCapturadas={fotosCapturadas}
+                setFotosCapturadas={setFotosCapturadas}
+              />
+            )}
+            
+            {currentStep === 6 && (
+              <AssinaturasForm form={form} />
+            )}
 
-          <AssinaturasForm
-            fiscalNome={fiscalNome}
-            setFiscalNome={setFiscalNome}
-            representanteNome={representanteNome}
-            setRepresentanteNome={setRepresentanteNome}
-            representanteCargo={representanteCargo}
-            setRepresentanteCargo={setRepresentanteCargo}
-            autocompleteData={autocompleteData}
-            isOnline={isOnline}
-          />
-
-          <RegistroFotograficoForm
-            fotos={fotos}
-            onCapturarFoto={() => setShowCamera(true)}
-          />
-
-          <div className="flex gap-4 pt-6">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate('/vistorias')}
-              className="flex-1"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={isSaving}
-              className="flex-1 bg-blue-600 hover:bg-blue-700"
-            >
-              {isSaving ? "Salvando..." : isOnline ? "Finalizar Vistoria" : "Salvar Offline"}
-            </Button>
-          </div>
-        </form>
+            {/* Navegação */}
+            <div className="flex justify-between pt-6">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={prevStep}
+                disabled={currentStep === 1}
+              >
+                Anterior
+              </Button>
+              
+              {currentStep < 6 ? (
+                <Button 
+                  type="button" 
+                  onClick={nextStep}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Próximo
+                </Button>
+              ) : (
+                <Button 
+                  type="submit" 
+                  disabled={isLoading}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {isLoading ? (
+                    <>
+                      <Save className="w-4 h-4 mr-2 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      {isOnline ? (
+                        <>
+                          <Send className="w-4 h-4 mr-2" />
+                          Finalizar Vistoria
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          Salvar Offline
+                        </>
+                      )}
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          </form>
+        </Form>
       </div>
-
-      {showCamera && (
-        <CameraCapture 
-          onCapture={handleCameraCapture}
-          onClose={() => setShowCamera(false)}
-          latitude={latitude}
-          longitude={longitude}
-        />
-      )}
     </div>
   );
 };

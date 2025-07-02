@@ -1,13 +1,15 @@
+
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useVistorias } from '@/hooks/useVistorias';
 import { useVistoriasStats } from '@/hooks/useVistoriasStats';
+import { useOfflineStorage } from '@/hooks/useOfflineStorage';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, MapPin, Building, Plus, LogOut, Eye, Download, BarChart3, Image } from 'lucide-react';
+import { Calendar, MapPin, Building, Plus, LogOut, Eye, Download, BarChart3, Image, Wifi, WifiOff, RefreshCw, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { generateVistoriaPDF } from '@/utils/pdfGenerator';
@@ -19,6 +21,13 @@ const VistoriasList = () => {
   const { user } = useAuth();
   const { vistorias, isLoading, refetch } = useVistorias();
   const { stats, isLoading: statsLoading } = useVistoriasStats();
+  const { 
+    isOnline, 
+    pendingCount, 
+    isSyncing, 
+    syncPendingVistorias, 
+    getPendingVistorias 
+  } = useOfflineStorage();
 
   // Recarregar dados toda vez que a tela é acessada
   useEffect(() => {
@@ -33,6 +42,28 @@ const VistoriasList = () => {
 
   const handleViewVistoria = (vistoriaId: string) => {
     navigate(`/vistoria/${vistoriaId}`);
+  };
+
+  const handleSyncVistorias = async () => {
+    if (!isOnline) {
+      toast({
+        title: "Sem conexão",
+        description: "Você precisa estar online para sincronizar as vistorias",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await syncPendingVistorias();
+    } catch (error) {
+      console.error('Erro na sincronização:', error);
+      toast({
+        title: "Erro na sincronização",
+        description: "Não foi possível sincronizar algumas vistorias",
+        variant: "destructive"
+      });
+    }
   };
 
   const handlePrintPDF = async (vistoria: any) => {
@@ -211,9 +242,22 @@ const VistoriasList = () => {
                 className="h-10 w-10 sm:h-12 sm:w-12 object-contain flex-shrink-0"
               />
               <div className="min-w-0 flex-1">
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
-                  Minhas Vistorias
-                </h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
+                    Minhas Vistorias
+                  </h1>
+                  {/* Indicador de Status Online/Offline */}
+                  <div className="flex items-center gap-1">
+                    {isOnline ? (
+                      <Wifi className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <WifiOff className="w-4 h-4 text-red-600" />
+                    )}
+                    <span className={`text-xs font-medium ${isOnline ? 'text-green-600' : 'text-red-600'}`}>
+                      {isOnline ? 'Online' : 'Offline'}
+                    </span>
+                  </div>
+                </div>
                 <p className="text-sm sm:text-base text-gray-600 mt-1 truncate">
                   Bem-vindo, {user?.email}
                 </p>
@@ -249,6 +293,49 @@ const VistoriasList = () => {
       </div>
 
       <div className="max-w-6xl mx-auto p-4 sm:p-6">
+        {/* Card de Status de Sincronização */}
+        {pendingCount > 0 && (
+          <Card className="mb-6 border-orange-200 bg-orange-50">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 text-orange-600" />
+                  <div>
+                    <h3 className="font-semibold text-orange-800">
+                      {pendingCount} vistoria{pendingCount > 1 ? 's' : ''} não sincronizada{pendingCount > 1 ? 's' : ''}
+                    </h3>
+                    <p className="text-sm text-orange-700">
+                      {isOnline 
+                        ? 'Clique em "Sincronizar" para enviar para o servidor'
+                        : 'Aguardando conexão com a internet'
+                      }
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={handleSyncVistorias}
+                  disabled={!isOnline || isSyncing}
+                  variant="outline"
+                  size="sm"
+                  className="border-orange-300 text-orange-700 hover:bg-orange-100"
+                >
+                  {isSyncing ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Sincronizando...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Sincronizar
+                    </>
+                  )}
+                </Button>
+              </div>
+            </Card>
+          </div>
+        )}
+
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
@@ -258,13 +345,13 @@ const VistoriasList = () => {
           </CardHeader>
           <CardContent>
             {statsLoading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-                {[...Array(6)].map((_, i) => (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 sm:gap-4">
+                {[...Array(7)].map((_, i) => (
                   <Skeleton key={i} className="h-16" />
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 sm:gap-4">
                 <div className="text-center p-3 bg-blue-50 rounded-lg">
                   <div className="text-xl sm:text-2xl font-bold text-blue-600">{stats.total}</div>
                   <div className="text-xs text-blue-600">Total</div>
@@ -288,6 +375,10 @@ const VistoriasList = () => {
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
                   <div className="text-xl sm:text-2xl font-bold text-gray-600">{stats.paralisada}</div>
                   <div className="text-xs text-gray-600">Paralisada</div>
+                </div>
+                <div className="text-center p-3 bg-orange-50 rounded-lg">
+                  <div className="text-xl sm:text-2xl font-bold text-orange-600">{pendingCount}</div>
+                  <div className="text-xs text-orange-600">Não Sincronizadas</div>
                 </div>
               </div>
             )}
