@@ -49,7 +49,6 @@ interface CapturedPhoto {
 export const useVistoria = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [fotos, setFotos] = useState<CapturedPhoto[]>([]);
 
   const uploadFoto = async (foto: CapturedPhoto, vistoriaId: string, ordem: number) => {
     if (!user) throw new Error('Usuário não autenticado');
@@ -91,7 +90,7 @@ export const useVistoria = () => {
     return urlData.publicUrl;
   };
 
-  const salvarVistoria = async (data: VistoriaData): Promise<string | null> => {
+  const salvarVistoria = async (data: VistoriaData, fotosToUpload: CapturedPhoto[] = []): Promise<string | null> => {
     if (!user) {
       toast({
         title: "Erro",
@@ -105,6 +104,7 @@ export const useVistoria = () => {
 
     try {
       console.log('Salvando vistoria online:', data);
+      console.log('Fotos a enviar:', fotosToUpload.length);
 
       // Preparar dados para o banco
       const vistoriaData = {
@@ -167,11 +167,11 @@ export const useVistoria = () => {
 
       console.log('Vistoria inserida com ID:', vistoriaResult.id);
 
-      // Upload das fotos
-      if (fotos.length > 0) {
-        console.log(`Fazendo upload de ${fotos.length} fotos...`);
-        for (let i = 0; i < fotos.length; i++) {
-          await uploadFoto(fotos[i], vistoriaResult.id, i + 1);
+      // Upload das fotos se existirem
+      if (fotosToUpload.length > 0) {
+        console.log(`Fazendo upload de ${fotosToUpload.length} fotos...`);
+        for (let i = 0; i < fotosToUpload.length; i++) {
+          await uploadFoto(fotosToUpload[i], vistoriaResult.id, i + 1);
         }
       }
 
@@ -179,9 +179,6 @@ export const useVistoria = () => {
         title: "Sucesso!",
         description: "Relatório de vistoria salvo com sucesso!",
       });
-
-      // Limpar fotos após salvar
-      setFotos([]);
 
       return vistoriaResult.id;
 
@@ -193,20 +190,8 @@ export const useVistoria = () => {
     }
   };
 
-  const adicionarFoto = (foto: CapturedPhoto) => {
-    console.log('Adicionando foto:', { legenda: foto.legenda, fileSize: foto.file.size });
-    setFotos(prev => [...prev, foto]);
-  };
-
-  const removerFoto = (index: number) => {
-    setFotos(prev => prev.filter((_, i) => i !== index));
-  };
-
   return {
     salvarVistoria,
-    adicionarFoto,
-    removerFoto,
-    fotos,
     isLoading
   };
 };

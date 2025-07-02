@@ -28,13 +28,13 @@ interface CapturedPhoto {
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { salvarVistoria, adicionarFoto, fotos: fotosOnline, isLoading: isSaving } = useVistoria();
+  const { salvarVistoria, isLoading: isSaving } = useVistoria();
   const { autocompleteData } = useAutocomplete();
   const { latitude, longitude, error: locationError, requestLocation, formatLocationString } = useGeolocation();
   const { profile } = useUserProfile();
   const { saveOfflineVistoria, getPendingVistorias, syncPendingVistorias, isOnline } = useOfflineStorage();
 
-  // Estado único para fotos (funciona tanto online quanto offline)
+  // Estado único para fotos - funciona tanto online quanto offline
   const [fotos, setFotos] = useState<CapturedPhoto[]>([]);
   
   const [nomeObra, setNomeObra] = useState("");
@@ -149,12 +149,8 @@ const Index = () => {
 
     try {
       if (isOnline) {
-        // Modo online: adicionar fotos ao hook useVistoria antes de salvar
-        fotos.forEach(foto => {
-          adicionarFoto(foto);
-        });
-        
-        const result = await salvarVistoria(vistoriaData);
+        // Modo online: usar hook useVistoria com upload direto
+        const result = await salvarVistoria(vistoriaData, fotos);
         if (result) {
           navigate('/vistorias');
         }
@@ -195,8 +191,12 @@ const Index = () => {
       previewLength: photo.preview.length
     });
     
-    // Adicionar foto apenas ao estado local (único ponto de armazenamento)
-    setFotos(prev => [...prev, photo]);
+    // Adicionar foto ao estado local (único ponto de controle)
+    setFotos(prev => {
+      const novasFotos = [...prev, photo];
+      console.log('Fotos atualizadas:', novasFotos.length);
+      return novasFotos;
+    });
     setShowCamera(false);
     
     console.log('Foto adicionada localmente, modal fechado');

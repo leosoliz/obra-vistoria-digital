@@ -33,5 +33,33 @@
       "platform": "wide",
       "label": "Sistema de Vistoria de Obras - Presidente Getúlio"
     }
+  ],
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "shortcuts": [
+    {
+      "name": "Nova Vistoria",
+      "short_name": "Nova",
+      "description": "Criar nova vistoria de obra",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/lovable-uploads/865d3185-5d6c-416e-b9e1-79be88c6a8bd.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Vistorias",
+      "short_name": "Lista",
+      "description": "Ver lista de vistorias",
+      "url": "/vistorias",
+      "icons": [
+        {
+          "src": "/lovable-uploads/865d3185-5d6c-416e-b9e1-79be88c6a8bd.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
   ]
 }
