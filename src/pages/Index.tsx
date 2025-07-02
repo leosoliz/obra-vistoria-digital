@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -12,11 +13,11 @@ import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge'; 
-import IdentificacaoObraForm from '@/components/forms/IdentificacaoObraForm';
-import ObjetivosVistoriaForm from '@/components/forms/ObjetivosVistoriaForm';
-import SituacaoObraForm from '@/components/forms/SituacaoObraForm';
-import AssinaturasForm from '@/components/forms/AssinaturasForm';
-import RegistroFotograficoForm from '@/components/forms/RegistroFotograficoForm';
+import { IdentificacaoObraForm } from '@/components/forms/IdentificacaoObraForm';
+import { ObjetivosVistoriaForm } from '@/components/forms/ObjetivosVistoriaForm';
+import { SituacaoObraForm } from '@/components/forms/SituacaoObraForm';
+import { AssinaturasForm } from '@/components/forms/AssinaturasForm';
+import { RegistroFotograficoForm } from '@/components/forms/RegistroFotograficoForm';
 import { Save, Send, MapPin, LogOut, List, Wifi, WifiOff } from 'lucide-react';
 
 interface Coordinates {
@@ -106,7 +107,7 @@ const Index = () => {
     isOnline, 
     saveOfflineVistoria 
   } = useOfflineStorage();
-  const { coordinates, getLocation, isLoading: gpsLoading } = useGeolocation();
+  const { latitude, longitude, requestLocation, isLoading: gpsLoading } = useGeolocation();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [fotosCapturadas, setFotosCapturadas] = useState<CapturedPhoto[]>([]);
@@ -141,7 +142,7 @@ const Index = () => {
   });
 
   useEffect(() => {
-    getLocation();
+    requestLocation();
   }, []);
 
   const handleLogout = async () => {
@@ -154,10 +155,10 @@ const Index = () => {
     console.log('Submetendo dados:', data);
     console.log('Fotos capturadas:', fotosCapturadas.length);
 
-    const vistoriaData = {
+    const vistoriaData: VistoriaData = {
       ...data,
-      latitude: coordinates?.latitude,
-      longitude: coordinates?.longitude,
+      latitude: latitude,
+      longitude: longitude,
     };
 
     try {
@@ -313,9 +314,9 @@ const Index = () => {
                 <MapPin className="w-5 h-5 text-blue-600" />
                 <div>
                   <h3 className="font-semibold text-gray-900">Localização GPS</h3>
-                  {coordinates ? (
+                  {latitude && longitude ? (
                     <p className="text-sm text-gray-600">
-                      Lat: {coordinates.latitude.toFixed(6)}, Lng: {coordinates.longitude.toFixed(6)}
+                      Lat: {latitude.toFixed(6)}, Lng: {longitude.toFixed(6)}
                     </p>
                   ) : (
                     <p className="text-sm text-gray-500">
@@ -324,8 +325,8 @@ const Index = () => {
                   )}
                 </div>
               </div>
-              <Badge variant={coordinates ? 'default' : 'secondary'}>
-                {coordinates ? 'GPS Ativo' : 'GPS Inativo'}
+              <Badge variant={latitude && longitude ? 'default' : 'secondary'}>
+                {latitude && longitude ? 'GPS Ativo' : 'GPS Inativo'}
               </Badge>
             </div>
           </CardContent>
