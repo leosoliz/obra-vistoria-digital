@@ -27,8 +27,11 @@ export const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (value && suggestions.length > 0) {
-      const filtered = suggestions.filter(suggestion =>
+    // Garantir que suggestions é um array válido
+    const validSuggestions = Array.isArray(suggestions) ? suggestions : [];
+    
+    if (value && validSuggestions.length > 0) {
+      const filtered = validSuggestions.filter(suggestion =>
         suggestion.toLowerCase().includes(value.toLowerCase())
       ).slice(0, 10); // Limitar a 10 sugestões
       setFilteredSuggestions(filtered);

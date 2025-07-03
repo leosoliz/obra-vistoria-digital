@@ -389,7 +389,12 @@ const Index = () => {
                 setDataVistoria={(value) => form.setValue('dataVistoria', value)}
                 horaVistoria={form.watch('horaVistoria') || ''}
                 setHoraVistoria={(value) => form.setValue('horaVistoria', value)}
-                autocompleteData={{}}
+                autocompleteData={{
+                  nomes_obra: [],
+                  numeros_contrato: [],
+                  empresas_responsavel: [],
+                  engenheiros_responsavel: []
+                }}
                 latitude={latitude}
                 longitude={longitude}
                 locationError={null}
@@ -411,7 +416,9 @@ const Index = () => {
                 }}
                 outroObjetivo={form.watch('outroObjetivo') || ''}
                 setOutroObjetivo={(value) => form.setValue('outroObjetivo', value)}
-                autocompleteData={{}}
+                autocompleteData={{
+                  outros_objetivos: []
+                }}
               />
             )}
             
@@ -467,7 +474,10 @@ const Index = () => {
                 setRepresentanteNome={(value) => form.setValue('representanteNome', value)}
                 representanteCargo={form.watch('representanteCargo') || ''}
                 setRepresentanteCargo={(value) => form.setValue('representanteCargo', value)}
-                autocompleteData={{}}
+                autocompleteData={{
+                  representantes_nome: [],
+                  representantes_cargo: []
+                }}
                 isOnline={isOnline}
               />
             )}
