@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useVistoria } from '@/hooks/useVistoria';
 import { useOfflineStorage } from '@/hooks/useOfflineStorage';
 import { useGeolocation } from '@/hooks/useGeolocation';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
@@ -18,6 +19,7 @@ import { ObjetivosVistoriaForm } from '@/components/forms/ObjetivosVistoriaForm'
 import { SituacaoObraForm } from '@/components/forms/SituacaoObraForm';
 import { AssinaturasForm } from '@/components/forms/AssinaturasForm';
 import { RegistroFotograficoForm } from '@/components/forms/RegistroFotograficoForm';
+import { CameraCapture } from '@/components/CameraCapture';
 import { Save, Send, MapPin, LogOut, List, Wifi, WifiOff } from 'lucide-react';
 
 interface Coordinates {
@@ -108,9 +110,11 @@ const Index = () => {
     saveOfflineVistoria 
   } = useOfflineStorage();
   const { latitude, longitude, requestLocation, isLoading: gpsLoading } = useGeolocation();
+  const { profile } = useUserProfile();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [fotosCapturadas, setFotosCapturadas] = useState<CapturedPhoto[]>([]);
+  const [showCamera, setShowCamera] = useState(false);
 
   const form = useForm<z.infer<typeof vistoriaSchema>>({
     resolver: zodResolver(vistoriaSchema),
@@ -141,9 +145,47 @@ const Index = () => {
     mode: 'onChange'
   });
 
+  // Cache para nome do usuário
+  const getUserNameFromCache = () => {
+    const cachedName = localStorage.getItem('user_name_cache');
+    return cachedName;
+  };
+
+  const saveUserNameToCache = (name: string) => {
+    localStorage.setItem('user_name_cache', name);
+  };
+
+  // Função para obter nome do usuário (online ou offline)
+  const getUserName = () => {
+    if (isOnline && profile?.full_name) {
+      saveUserNameToCache(profile.full_name);
+      return profile.full_name;
+    } else {
+      return getUserNameFromCache() || '';
+    }
+  };
+
   useEffect(() => {
     requestLocation();
   }, []);
+
+  // Preencher automaticamente os campos de fiscal quando tiver dados do usuário
+  useEffect(() => {
+    const userName = getUserName();
+    if (userName) {
+      form.setValue('fiscalPrefeitura', userName);
+      form.setValue('fiscalNome', userName);
+    }
+  }, [profile, isOnline, form]);
+
+  const handleCapturarFoto = () => {
+    setShowCamera(true);
+  };
+
+  const handleFotoCapturada = (photo: CapturedPhoto) => {
+    setFotosCapturadas(prev => [...prev, photo]);
+    setShowCamera(false);
+  };
 
   const handleLogout = async () => {
     const { supabase } = await import('@/integrations/supabase/client');
@@ -459,10 +501,7 @@ const Index = () => {
             {currentStep === 5 && (
               <RegistroFotograficoForm 
                 fotos={fotosCapturadas}
-                onCapturarFoto={() => {
-                  // Camera capture functionality would go here
-                  console.log('Capturar foto');
-                }}
+                onCapturarFoto={handleCapturarFoto}
               />
             )}
             
@@ -532,6 +571,16 @@ const Index = () => {
             </div>
           </form>
         </Form>
+
+        {/* Modal da Câmera */}
+        {showCamera && (
+          <CameraCapture
+            onCapture={handleFotoCapturada}
+            onClose={() => setShowCamera(false)}
+            latitude={latitude}
+            longitude={longitude}
+          />
+        )}
       </div>
     </div>
   );
