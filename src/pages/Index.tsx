@@ -156,7 +156,24 @@ const Index = () => {
     console.log('Fotos capturadas:', fotosCapturadas.length);
 
     const vistoriaData: VistoriaData = {
-      ...data,
+      nomeObra: data.nomeObra || '',
+      localizacao: data.localizacao || '',
+      numeroContrato: data.numeroContrato || '',
+      empresaResponsavel: data.empresaResponsavel || '',
+      engenheiroResponsavel: data.engenheiroResponsavel || '',
+      fiscalPrefeitura: data.fiscalPrefeitura || '',
+      dataVistoria: data.dataVistoria || '',
+      horaVistoria: data.horaVistoria || '',
+      objetivoVistoria: data.objetivoVistoria || [],
+      outroObjetivo: data.outroObjetivo || '',
+      descricaoAtividades: data.descricaoAtividades || '',
+      situacaoObra: data.situacaoObra || '',
+      detalhesPendencias: data.detalhesPendencias || '',
+      recomendacoes: data.recomendacoes || '',
+      fiscalNome: data.fiscalNome || '',
+      fiscalMatricula: data.fiscalMatricula || '',
+      representanteNome: data.representanteNome || '',
+      representanteCargo: data.representanteCargo || '',
       latitude: latitude,
       longitude: longitude,
     };
@@ -355,11 +372,47 @@ const Index = () => {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {currentStep === 1 && (
-              <IdentificacaoObraForm form={form} />
+              <IdentificacaoObraForm 
+                nomeObra={form.watch('nomeObra') || ''}
+                setNomeObra={(value) => form.setValue('nomeObra', value)}
+                localizacao={form.watch('localizacao') || ''}
+                setLocalizacao={(value) => form.setValue('localizacao', value)}
+                numeroContrato={form.watch('numeroContrato') || ''}
+                setNumeroContrato={(value) => form.setValue('numeroContrato', value)}
+                empresaResponsavel={form.watch('empresaResponsavel') || ''}
+                setEmpresaResponsavel={(value) => form.setValue('empresaResponsavel', value)}
+                engenheiroResponsavel={form.watch('engenheiroResponsavel') || ''}
+                setEngenheiroResponsavel={(value) => form.setValue('engenheiroResponsavel', value)}
+                fiscalPrefeitura={form.watch('fiscalPrefeitura') || ''}
+                setFiscalPrefeitura={(value) => form.setValue('fiscalPrefeitura', value)}
+                dataVistoria={form.watch('dataVistoria') || ''}
+                setDataVistoria={(value) => form.setValue('dataVistoria', value)}
+                horaVistoria={form.watch('horaVistoria') || ''}
+                setHoraVistoria={(value) => form.setValue('horaVistoria', value)}
+                autocompleteData={{}}
+                latitude={latitude}
+                longitude={longitude}
+                locationError={null}
+                formatLocationString={(lat: number, lng: number) => `${lat.toFixed(6)}, ${lng.toFixed(6)}`}
+                isOnline={isOnline}
+              />
             )}
             
             {currentStep === 2 && (
-              <ObjetivosVistoriaForm form={form} />
+              <ObjetivosVistoriaForm 
+                objetivoVistoria={form.watch('objetivoVistoria') || []}
+                handleObjetivoChange={(objetivo: string, checked: boolean) => {
+                  const current = form.watch('objetivoVistoria') || [];
+                  if (checked) {
+                    form.setValue('objetivoVistoria', [...current, objetivo]);
+                  } else {
+                    form.setValue('objetivoVistoria', current.filter(o => o !== objetivo));
+                  }
+                }}
+                outroObjetivo={form.watch('outroObjetivo') || ''}
+                setOutroObjetivo={(value) => form.setValue('outroObjetivo', value)}
+                autocompleteData={{}}
+              />
             )}
             
             {currentStep === 3 && (
@@ -388,18 +441,35 @@ const Index = () => {
             )}
             
             {currentStep === 4 && (
-              <SituacaoObraForm form={form} />
+              <SituacaoObraForm 
+                situacaoObra={form.watch('situacaoObra') || ''}
+                setSituacaoObra={(value) => form.setValue('situacaoObra', value)}
+                detalhesPendencias={form.watch('detalhesPendencias') || ''}
+                setDetalhesPendencias={(value) => form.setValue('detalhesPendencias', value)}
+              />
             )}
             
             {currentStep === 5 && (
               <RegistroFotograficoForm 
-                fotosCapturadas={fotosCapturadas}
-                setFotosCapturadas={setFotosCapturadas}
+                fotos={fotosCapturadas}
+                onCapturarFoto={() => {
+                  // Camera capture functionality would go here
+                  console.log('Capturar foto');
+                }}
               />
             )}
             
             {currentStep === 6 && (
-              <AssinaturasForm form={form} />
+              <AssinaturasForm 
+                fiscalNome={form.watch('fiscalNome') || ''}
+                setFiscalNome={(value) => form.setValue('fiscalNome', value)}
+                representanteNome={form.watch('representanteNome') || ''}
+                setRepresentanteNome={(value) => form.setValue('representanteNome', value)}
+                representanteCargo={form.watch('representanteCargo') || ''}
+                setRepresentanteCargo={(value) => form.setValue('representanteCargo', value)}
+                autocompleteData={{}}
+                isOnline={isOnline}
+              />
             )}
 
             {/* Navegação */}
