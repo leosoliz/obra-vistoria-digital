@@ -194,8 +194,10 @@ const Index = () => {
   };
 
   const onSubmit = async (data: z.infer<typeof vistoriaSchema>) => {
+    console.log('=== INÍCIO onSubmit ===');
     console.log('Submetendo dados:', data);
     console.log('Fotos capturadas:', fotosCapturadas.length);
+    console.log('Current step:', currentStep);
 
     const vistoriaData: VistoriaData = {
       nomeObra: data.nomeObra || '',
@@ -545,6 +547,11 @@ const Index = () => {
                   type="submit" 
                   disabled={isLoading}
                   className="bg-green-600 hover:bg-green-700"
+                  onClick={() => {
+                    console.log('Botão finalizar clicado');
+                    console.log('Form state:', form.formState.isValid);
+                    console.log('Form errors:', form.formState.errors);
+                  }}
                 >
                   {isLoading ? (
                     <>
