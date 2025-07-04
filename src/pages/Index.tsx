@@ -13,7 +13,17 @@ import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge'; 
+import { Badge } from '@/components/ui/badge';
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from '@/components/ui/alert-dialog';
 import { IdentificacaoObraForm } from '@/components/forms/IdentificacaoObraForm';
 import { ObjetivosVistoriaForm } from '@/components/forms/ObjetivosVistoriaForm';
 import { SituacaoObraForm } from '@/components/forms/SituacaoObraForm';
@@ -115,6 +125,8 @@ const Index = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [fotosCapturadas, setFotosCapturadas] = useState<CapturedPhoto[]>([]);
   const [showCamera, setShowCamera] = useState(false);
+  const [showSaveImagesDialog, setShowSaveImagesDialog] = useState(false);
+  const [pendingVistoriaData, setPendingVistoriaData] = useState<z.infer<typeof vistoriaSchema> | null>(null);
 
   const form = useForm<z.infer<typeof vistoriaSchema>>({
     resolver: zodResolver(vistoriaSchema),
@@ -193,11 +205,56 @@ const Index = () => {
     navigate('/auth');
   };
 
-  const onSubmit = async (data: z.infer<typeof vistoriaSchema>) => {
-    console.log('=== INÍCIO onSubmit ===');
-    console.log('Submetendo dados:', data);
+  // Função para download das imagens no celular
+  const downloadImageToDevice = async (photo: CapturedPhoto, index: number) => {
+    try {
+      // Cria um link para download
+      const link = document.createElement('a');
+      link.href = photo.preview;
+      link.download = `vistoria_foto_${index + 1}_${new Date().toISOString().split('T')[0]}.jpg`;
+      
+      // Adiciona o link ao DOM e clica nele
+      document.body.appendChild(link);
+      link.click();
+      
+      // Remove o link do DOM
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Erro ao fazer download da imagem:', error);
+    }
+  };
+
+  // Função para salvar todas as imagens
+  const saveAllImagesToDevice = async () => {
+    if (fotosCapturadas.length === 0) return;
+    
+    try {
+      // Download de cada imagem com um pequeno delay
+      for (let i = 0; i < fotosCapturadas.length; i++) {
+        await downloadImageToDevice(fotosCapturadas[i], i);
+        // Pequeno delay entre downloads
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
+      toast({
+        title: "Imagens salvas!",
+        description: `${fotosCapturadas.length} imagens foram salvas no dispositivo.`,
+      });
+    } catch (error) {
+      console.error('Erro ao salvar imagens:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar algumas imagens.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Função para processar a vistoria após confirmação do usuário
+  const processVistoria = async (data: z.infer<typeof vistoriaSchema>) => {
+    console.log('=== INÍCIO processVistoria ===');
+    console.log('Processando dados:', data);
     console.log('Fotos capturadas:', fotosCapturadas.length);
-    console.log('Current step:', currentStep);
 
     const vistoriaData: VistoriaData = {
       nomeObra: data.nomeObra || '',
@@ -266,6 +323,23 @@ const Index = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const onSubmit = async (data: z.infer<typeof vistoriaSchema>) => {
+    console.log('=== INÍCIO onSubmit ===');
+    console.log('Submetendo dados:', data);
+    console.log('Fotos capturadas:', fotosCapturadas.length);
+    console.log('Current step:', currentStep);
+
+    // Se há fotos, pergunta ao usuário se quer salvar no dispositivo
+    if (fotosCapturadas.length > 0) {
+      setPendingVistoriaData(data);
+      setShowSaveImagesDialog(true);
+      return;
+    }
+
+    // Se não há fotos, processa diretamente
+    await processVistoria(data);
   };
 
   const nextStep = () => {
@@ -588,6 +662,40 @@ const Index = () => {
             longitude={longitude}
           />
         )}
+
+        {/* Diálogo para salvar imagens */}
+        <AlertDialog open={showSaveImagesDialog} onOpenChange={setShowSaveImagesDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Salvar Imagens no Dispositivo</AlertDialogTitle>
+              <AlertDialogDescription>
+                Foram capturadas {fotosCapturadas.length} imagens nesta vistoria. 
+                Deseja salvar as imagens em uma pasta no seu dispositivo?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={async () => {
+                setShowSaveImagesDialog(false);
+                if (pendingVistoriaData) {
+                  await processVistoria(pendingVistoriaData);
+                  setPendingVistoriaData(null);
+                }
+              }}>
+                Não, apenas finalizar
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={async () => {
+                setShowSaveImagesDialog(false);
+                await saveAllImagesToDevice();
+                if (pendingVistoriaData) {
+                  await processVistoria(pendingVistoriaData);
+                  setPendingVistoriaData(null);
+                }
+              }}>
+                Sim, salvar imagens
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
