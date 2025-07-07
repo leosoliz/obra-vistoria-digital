@@ -9,6 +9,7 @@ import { useVistoria } from '@/hooks/useVistoria';
 import { useOfflineStorage } from '@/hooks/useOfflineStorage';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { useAutocomplete } from '@/hooks/useAutocomplete';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
@@ -77,10 +78,10 @@ const vistoriaSchema = z.object({
   // Identificação da obra
   nomeObra: z.string().min(1, 'Nome da obra é obrigatório'),
   localizacao: z.string().min(1, 'Localização é obrigatória'),
-  numeroContrato: z.string().optional(),
-  empresaResponsavel: z.string().optional(),
-  engenheiroResponsavel: z.string().optional(),
-  fiscalPrefeitura: z.string().optional(),
+  numeroContrato: z.string().min(1, 'Número do contrato é obrigatório'),
+  empresaResponsavel: z.string().min(1, 'Empresa responsável é obrigatória'),
+  engenheiroResponsavel: z.string().min(1, 'Engenheiro responsável é obrigatório'),
+  fiscalPrefeitura: z.string().min(1, 'Fiscal da prefeitura é obrigatório'),
   dataVistoria: z.string().min(1, 'Data da vistoria é obrigatória'),
   horaVistoria: z.string().min(1, 'Hora da vistoria é obrigatória'),
   
@@ -119,6 +120,7 @@ const Index = () => {
     isOnline, 
     saveOfflineVistoria 
   } = useOfflineStorage();
+  const { autocompleteData, getVistoriaByContract } = useAutocomplete();
   const { latitude, longitude, requestLocation, isLoading: gpsLoading } = useGeolocation();
   const { profile } = useUserProfile();
   
@@ -342,6 +344,17 @@ const Index = () => {
     await processVistoria(data);
   };
 
+  const handleContractSelect = async (numeroContrato: string) => {
+    if (!numeroContrato) return;
+    
+    const vistoriaData = await getVistoriaByContract(numeroContrato);
+    if (vistoriaData) {
+      form.setValue('nomeObra', vistoriaData.nome_obra || '');
+      form.setValue('empresaResponsavel', vistoriaData.empresa_responsavel || '');
+      form.setValue('engenheiroResponsavel', vistoriaData.engenheiro_responsavel || '');
+    }
+  };
+
   const nextStep = () => {
     if (currentStep < 6) {
       setCurrentStep(currentStep + 1);
@@ -507,12 +520,8 @@ const Index = () => {
                 setDataVistoria={(value) => form.setValue('dataVistoria', value)}
                 horaVistoria={form.watch('horaVistoria') || ''}
                 setHoraVistoria={(value) => form.setValue('horaVistoria', value)}
-                autocompleteData={{
-                  nomes_obra: [],
-                  numeros_contrato: [],
-                  empresas_responsavel: [],
-                  engenheiros_responsavel: []
-                }}
+                autocompleteData={autocompleteData}
+                onContractSelect={handleContractSelect}
                 latitude={latitude}
                 longitude={longitude}
                 locationError={null}

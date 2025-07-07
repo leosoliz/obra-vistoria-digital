@@ -13,6 +13,12 @@ interface AutocompleteData {
   outros_objetivos: string[];
 }
 
+interface VistoriaByContract {
+  nome_obra: string;
+  empresa_responsavel: string;
+  engenheiro_responsavel: string;
+}
+
 export const useAutocomplete = () => {
   const { user } = useAuth();
   const [autocompleteData, setAutocompleteData] = useState<AutocompleteData>({
@@ -69,9 +75,31 @@ export const useAutocomplete = () => {
     fetchAutocompleteData();
   }, [user]);
 
+  const getVistoriaByContract = async (numeroContrato: string): Promise<VistoriaByContract | null> => {
+    if (!user || !numeroContrato) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('obra_vistorias')
+        .select('nome_obra, empresa_responsavel, engenheiro_responsavel')
+        .eq('user_id', user.id)
+        .eq('numero_contrato', numeroContrato)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+
+      return data && data.length > 0 ? data[0] : null;
+    } catch (error) {
+      console.error('Erro ao buscar vistoria por contrato:', error);
+      return null;
+    }
+  };
+
   return {
     autocompleteData,
     isLoading,
-    refetch: fetchAutocompleteData
+    refetch: fetchAutocompleteData,
+    getVistoriaByContract
   };
 };

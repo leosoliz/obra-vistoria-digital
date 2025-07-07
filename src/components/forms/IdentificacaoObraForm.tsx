@@ -28,6 +28,7 @@ interface IdentificacaoObraFormProps {
   locationError: string | null;
   formatLocationString: (lat: number, lng: number) => string;
   isOnline: boolean;
+  onContractSelect?: (numeroContrato: string) => void;
 }
 
 export const IdentificacaoObraForm: React.FC<IdentificacaoObraFormProps> = ({
@@ -52,7 +53,8 @@ export const IdentificacaoObraForm: React.FC<IdentificacaoObraFormProps> = ({
   longitude,
   locationError,
   formatLocationString,
-  isOnline
+  isOnline,
+  onContractSelect
 }) => {
   return (
     <Card>
@@ -105,9 +107,15 @@ export const IdentificacaoObraForm: React.FC<IdentificacaoObraFormProps> = ({
           <AutocompleteInput
             label="Número do Contrato"
             value={numeroContrato}
-            onChange={setNumeroContrato}
+            onChange={(value) => {
+              setNumeroContrato(value);
+              if (onContractSelect) {
+                onContractSelect(value);
+              }
+            }}
             suggestions={autocompleteData.numeros_contrato}
             placeholder="Número do contrato"
+            required
           />
 
           <AutocompleteInput
@@ -116,6 +124,7 @@ export const IdentificacaoObraForm: React.FC<IdentificacaoObraFormProps> = ({
             onChange={setEmpresaResponsavel}
             suggestions={autocompleteData.empresas_responsavel}
             placeholder="Nome da empresa"
+            required
           />
         </div>
 
@@ -126,10 +135,11 @@ export const IdentificacaoObraForm: React.FC<IdentificacaoObraFormProps> = ({
             onChange={setEngenheiroResponsavel}
             suggestions={autocompleteData.engenheiros_responsavel}
             placeholder="Nome do engenheiro"
+            required
           />
 
           <div>
-            <Label htmlFor="fiscalPrefeitura">Fiscal da Prefeitura</Label>
+            <Label htmlFor="fiscalPrefeitura">Fiscal da Prefeitura *</Label>
             <Input
               id="fiscalPrefeitura"
               value={fiscalPrefeitura}
@@ -137,6 +147,7 @@ export const IdentificacaoObraForm: React.FC<IdentificacaoObraFormProps> = ({
               placeholder="Nome do fiscal"
               className={isOnline ? "bg-gray-50" : ""}
               readOnly={isOnline}
+              required
             />
             <p className="text-xs text-gray-500 mt-1">
               {isOnline ? "Preenchido automaticamente com seu nome" : "Campo habilitado para edição (modo offline)"}
