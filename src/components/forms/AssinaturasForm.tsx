@@ -37,7 +37,7 @@ export const AssinaturasForm: React.FC<AssinaturasFormProps> = ({
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <Label htmlFor="fiscalNome">Nome do Fiscal</Label>
+          <Label htmlFor="fiscalNome">Nome do Fiscal *</Label>
           <Input
             id="fiscalNome"
             value={fiscalNome}
@@ -45,6 +45,7 @@ export const AssinaturasForm: React.FC<AssinaturasFormProps> = ({
             placeholder="Nome completo do fiscal"
             className={isOnline ? "bg-gray-50" : ""}
             readOnly={isOnline}
+            required
           />
           <p className="text-xs text-gray-500 mt-1">
             {isOnline ? "Preenchido automaticamente com seu nome" : "Campo habilitado para edição (modo offline)"}
@@ -60,6 +61,7 @@ export const AssinaturasForm: React.FC<AssinaturasFormProps> = ({
             onChange={setRepresentanteNome}
             suggestions={autocompleteData.representantes_nome}
             placeholder="Nome do representante"
+            required
           />
 
           <AutocompleteInput
@@ -68,6 +70,7 @@ export const AssinaturasForm: React.FC<AssinaturasFormProps> = ({
             onChange={setRepresentanteCargo}
             suggestions={autocompleteData.representantes_cargo}
             placeholder="Cargo do representante"
+            required
           />
         </div>
       </CardContent>

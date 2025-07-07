@@ -100,10 +100,10 @@ const vistoriaSchema = z.object({
   recomendacoes: z.string().optional(),
   
   // Assinaturas
-  fiscalNome: z.string().optional(),
+  fiscalNome: z.string().min(1, 'Nome do fiscal é obrigatório'),
   fiscalMatricula: z.string().optional(),
-  representanteNome: z.string().optional(),
-  representanteCargo: z.string().optional(),
+  representanteNome: z.string().min(1, 'Nome do representante é obrigatório'),
+  representanteCargo: z.string().min(1, 'Cargo do representante é obrigatório'),
 });
 
 interface CapturedPhoto {
@@ -182,6 +182,14 @@ const Index = () => {
   useEffect(() => {
     requestLocation();
   }, []);
+
+  // Preencher automaticamente a localização com coordenadas GPS
+  useEffect(() => {
+    if (latitude && longitude) {
+      const locationString = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+      form.setValue('localizacao', locationString);
+    }
+  }, [latitude, longitude, form]);
 
   // Preencher automaticamente os campos de fiscal quando tiver dados do usuário
   useEffect(() => {
@@ -598,10 +606,7 @@ const Index = () => {
                 setRepresentanteNome={(value) => form.setValue('representanteNome', value)}
                 representanteCargo={form.watch('representanteCargo') || ''}
                 setRepresentanteCargo={(value) => form.setValue('representanteCargo', value)}
-                autocompleteData={{
-                  representantes_nome: [],
-                  representantes_cargo: []
-                }}
+                autocompleteData={autocompleteData}
                 isOnline={isOnline}
               />
             )}
