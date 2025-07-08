@@ -29,6 +29,7 @@ interface IdentificacaoObraFormProps {
   formatLocationString: (lat: number, lng: number) => string;
   isOnline: boolean;
   onContractSelect?: (numeroContrato: string) => void;
+  isAtualizacaoCadastral?: boolean;
 }
 
 export const IdentificacaoObraForm: React.FC<IdentificacaoObraFormProps> = ({
@@ -54,7 +55,8 @@ export const IdentificacaoObraForm: React.FC<IdentificacaoObraFormProps> = ({
   locationError,
   formatLocationString,
   isOnline,
-  onContractSelect
+  onContractSelect,
+  isAtualizacaoCadastral = false
 }) => {
   return (
     <Card>
@@ -67,7 +69,7 @@ export const IdentificacaoObraForm: React.FC<IdentificacaoObraFormProps> = ({
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <AutocompleteInput
-            label="Nome da Obra"
+            label={`Nome da Obra${!isAtualizacaoCadastral ? ' *' : ''}`}
             value={nomeObra}
             onChange={setNomeObra}
             suggestions={autocompleteData.nomes_obra}

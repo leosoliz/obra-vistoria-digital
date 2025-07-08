@@ -27,6 +27,7 @@ export const ObjetivosVistoriaForm: React.FC<ObjetivosVistoriaFormProps> = ({
       <CardContent>
         <div className="space-y-3">
           {[
+            "Atualização Cadastral",
             "Início de Obra",
             "Vistoria de Rotina", 
             "Medição",

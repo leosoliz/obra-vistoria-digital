@@ -76,35 +76,74 @@ interface VistoriaData {
 
 const vistoriaSchema = z.object({
   // Identificação da obra
-  nomeObra: z.string().min(1, 'Nome da obra é obrigatório'),
-  localizacao: z.string().min(1, 'Localização é obrigatória'),
-  numeroContrato: z.string().min(1, 'Número do contrato é obrigatório'),
-  empresaResponsavel: z.string().min(1, 'Empresa responsável é obrigatória'),
-  engenheiroResponsavel: z.string().min(1, 'Engenheiro responsável é obrigatório'),
-  fiscalPrefeitura: z.string().min(1, 'Fiscal da prefeitura é obrigatório'),
-  dataVistoria: z.string().min(1, 'Data da vistoria é obrigatória'),
-  horaVistoria: z.string().min(1, 'Hora da vistoria é obrigatória'),
+  nomeObra: z.string().optional(),
+  localizacao: z.string().optional(),
+  numeroContrato: z.string().optional(),
+  empresaResponsavel: z.string().optional(),
+  engenheiroResponsavel: z.string().optional(),
+  fiscalPrefeitura: z.string().optional(),
+  dataVistoria: z.string().optional(),
+  horaVistoria: z.string().optional(),
   
   // Objetivos
   objetivoVistoria: z.array(z.string()).min(1, 'Selecione pelo menos um objetivo'),
   outroObjetivo: z.string().optional(),
   
   // Descrição
-  descricaoAtividades: z.string().min(1, 'Descrição das atividades é obrigatória'),
+  descricaoAtividades: z.string().optional(),
   
   // Situação
-  situacaoObra: z.string().min(1, 'Situação da obra é obrigatória'),
+  situacaoObra: z.string().optional(),
   detalhesPendencias: z.string().optional(),
   
   // Recomendações
   recomendacoes: z.string().optional(),
   
   // Assinaturas
-  fiscalNome: z.string().min(1, 'Nome do fiscal é obrigatório'),
+  fiscalNome: z.string().optional(),
   fiscalMatricula: z.string().optional(),
-  representanteNome: z.string().min(1, 'Nome do representante é obrigatório'),
-  representanteCargo: z.string().min(1, 'Cargo do representante é obrigatório'),
+  representanteNome: z.string().optional(),
+  representanteCargo: z.string().optional(),
 });
+
+// Schema condicional baseado no objetivo selecionado
+const createVistoriaSchema = (isAtualizacaoCadastral: boolean) => {
+  if (isAtualizacaoCadastral) {
+    return vistoriaSchema;
+  }
+  
+  return z.object({
+    // Identificação da obra
+    nomeObra: z.string().min(1, 'Nome da obra é obrigatório'),
+    localizacao: z.string().min(1, 'Localização é obrigatória'),
+    numeroContrato: z.string().min(1, 'Número do contrato é obrigatório'),
+    empresaResponsavel: z.string().min(1, 'Empresa responsável é obrigatória'),
+    engenheiroResponsavel: z.string().min(1, 'Engenheiro responsável é obrigatório'),
+    fiscalPrefeitura: z.string().min(1, 'Fiscal da prefeitura é obrigatório'),
+    dataVistoria: z.string().min(1, 'Data da vistoria é obrigatória'),
+    horaVistoria: z.string().min(1, 'Hora da vistoria é obrigatória'),
+    
+    // Objetivos
+    objetivoVistoria: z.array(z.string()).min(1, 'Selecione pelo menos um objetivo'),
+    outroObjetivo: z.string().optional(),
+    
+    // Descrição
+    descricaoAtividades: z.string().min(1, 'Descrição das atividades é obrigatória'),
+    
+    // Situação
+    situacaoObra: z.string().min(1, 'Situação da obra é obrigatória'),
+    detalhesPendencias: z.string().optional(),
+    
+    // Recomendações
+    recomendacoes: z.string().optional(),
+    
+    // Assinaturas
+    fiscalNome: z.string().min(1, 'Nome do fiscal é obrigatório'),
+    fiscalMatricula: z.string().optional(),
+    representanteNome: z.string().min(1, 'Nome do representante é obrigatório'),
+    representanteCargo: z.string().min(1, 'Cargo do representante é obrigatório'),
+  });
+};
 
 interface CapturedPhoto {
   file: File;
@@ -335,7 +374,15 @@ const Index = () => {
     }
   };
 
-  const onSubmit = async (data: z.infer<typeof vistoriaSchema>) => {
+  const onSubmit = async (data: any) => {
+    // Validar usando o schema apropriado
+    const currentSchema = createVistoriaSchema(isAtualizacaoCadastral);
+    const validationResult = currentSchema.safeParse(data);
+    
+    if (!validationResult.success) {
+      console.error('Validation errors:', validationResult.error);
+      return;
+    }
     console.log('=== INÍCIO onSubmit ===');
     console.log('Submetendo dados:', data);
     console.log('Fotos capturadas:', fotosCapturadas.length);
@@ -377,8 +424,8 @@ const Index = () => {
 
   const getStepTitle = (step: number) => {
     switch(step) {
-      case 1: return 'Identificação da Obra';
-      case 2: return 'Objetivos da Vistoria';
+      case 1: return 'Objetivos da Vistoria';
+      case 2: return 'Identificação da Obra';
       case 3: return 'Descrição das Atividades';
       case 4: return 'Situação da Obra';
       case 5: return 'Registro Fotográfico';
@@ -386,6 +433,16 @@ const Index = () => {
       default: return '';
     }
   };
+
+  // Verificar se Atualização Cadastral está selecionada
+  const isAtualizacaoCadastral = form.watch('objetivoVistoria')?.includes('Atualização Cadastral') || false;
+
+  // Atualizar o resolver do form baseado no objetivo selecionado
+  useEffect(() => {
+    const currentSchema = createVistoriaSchema(isAtualizacaoCadastral);
+    form.clearErrors();
+    // Recriar o form com o novo schema não é necessário, apenas limpar erros
+  }, [isAtualizacaoCadastral, form]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -511,6 +568,25 @@ const Index = () => {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {currentStep === 1 && (
+              <ObjetivosVistoriaForm 
+                objetivoVistoria={form.watch('objetivoVistoria') || []}
+                handleObjetivoChange={(objetivo: string, checked: boolean) => {
+                  const current = form.watch('objetivoVistoria') || [];
+                  if (checked) {
+                    form.setValue('objetivoVistoria', [...current, objetivo]);
+                  } else {
+                    form.setValue('objetivoVistoria', current.filter(o => o !== objetivo));
+                  }
+                }}
+                outroObjetivo={form.watch('outroObjetivo') || ''}
+                setOutroObjetivo={(value) => form.setValue('outroObjetivo', value)}
+                autocompleteData={{
+                  outros_objetivos: []
+                }}
+              />
+            )}
+            
+            {currentStep === 2 && (
               <IdentificacaoObraForm 
                 nomeObra={form.watch('nomeObra') || ''}
                 setNomeObra={(value) => form.setValue('nomeObra', value)}
@@ -535,25 +611,7 @@ const Index = () => {
                 locationError={null}
                 formatLocationString={(lat: number, lng: number) => `${lat.toFixed(6)}, ${lng.toFixed(6)}`}
                 isOnline={isOnline}
-              />
-            )}
-            
-            {currentStep === 2 && (
-              <ObjetivosVistoriaForm 
-                objetivoVistoria={form.watch('objetivoVistoria') || []}
-                handleObjetivoChange={(objetivo: string, checked: boolean) => {
-                  const current = form.watch('objetivoVistoria') || [];
-                  if (checked) {
-                    form.setValue('objetivoVistoria', [...current, objetivo]);
-                  } else {
-                    form.setValue('objetivoVistoria', current.filter(o => o !== objetivo));
-                  }
-                }}
-                outroObjetivo={form.watch('outroObjetivo') || ''}
-                setOutroObjetivo={(value) => form.setValue('outroObjetivo', value)}
-                autocompleteData={{
-                  outros_objetivos: []
-                }}
+                isAtualizacaoCadastral={isAtualizacaoCadastral}
               />
             )}
             
