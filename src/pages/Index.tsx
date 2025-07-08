@@ -444,6 +444,14 @@ const Index = () => {
     // Recriar o form com o novo schema não é necessário, apenas limpar erros
   }, [isAtualizacaoCadastral, form]);
 
+  // Preencher automaticamente o nome da obra quando Atualização Cadastral for selecionado
+  useEffect(() => {
+    const objetivos = form.watch('objetivoVistoria') || [];
+    if (objetivos.includes('Atualização Cadastral')) {
+      form.setValue('nomeObra', 'Atualização Cadastral');
+    }
+  }, [form.watch('objetivoVistoria'), form]);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow-sm border-b">
