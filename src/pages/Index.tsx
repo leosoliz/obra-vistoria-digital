@@ -1,16 +1,39 @@
 
+/**
+ * PÁGINA PRINCIPAL - NOVA VISTORIA DE OBRA
+ * 
+ * Esta é a página principal da aplicação onde é realizada a criação de uma nova vistoria.
+ * Implementa um formulário multi-etapa com validação condicional baseada nos objetivos selecionados.
+ * 
+ * Funcionalidades principais:
+ * - Formulário multi-etapa (6 etapas)
+ * - Validação condicional (campos obrigatórios vs opcionais)
+ * - Captura de fotos com câmera
+ * - Geolocalização automática
+ * - Funcionalidade offline
+ * - Autocompletar baseado em dados históricos
+ * - Preenchimento automático de campos
+ */
+
+// Importações do React e navegação
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+// Importações para formulários e validação
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useAuth } from '@/hooks/useAuth';
-import { useVistoria } from '@/hooks/useVistoria';
-import { useOfflineStorage } from '@/hooks/useOfflineStorage';
-import { useGeolocation } from '@/hooks/useGeolocation';
-import { useUserProfile } from '@/hooks/useUserProfile';
-import { useAutocomplete } from '@/hooks/useAutocomplete';
-import { toast } from '@/hooks/use-toast';
+
+// Hooks customizados da aplicação
+import { useAuth } from '@/hooks/useAuth';              // Gerenciamento de autenticação
+import { useVistoria } from '@/hooks/useVistoria';      // Operações de vistoria
+import { useOfflineStorage } from '@/hooks/useOfflineStorage'; // Armazenamento offline
+import { useGeolocation } from '@/hooks/useGeolocation'; // Captura de GPS
+import { useUserProfile } from '@/hooks/useUserProfile'; // Dados do usuário
+import { useAutocomplete } from '@/hooks/useAutocomplete'; // Autocompletar
+import { toast } from '@/hooks/use-toast';              // Notificações
+
+// Componentes de UI
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,57 +48,80 @@ import {
   AlertDialogHeader, 
   AlertDialogTitle 
 } from '@/components/ui/alert-dialog';
+
+// Formulários específicos para cada etapa
 import { IdentificacaoObraForm } from '@/components/forms/IdentificacaoObraForm';
 import { ObjetivosVistoriaForm } from '@/components/forms/ObjetivosVistoriaForm';
 import { SituacaoObraForm } from '@/components/forms/SituacaoObraForm';
 import { AssinaturasForm } from '@/components/forms/AssinaturasForm';
 import { RegistroFotograficoForm } from '@/components/forms/RegistroFotograficoForm';
+
+// Componentes auxiliares
 import { CameraCapture } from '@/components/CameraCapture';
+
+// Ícones
 import { Save, Send, MapPin, LogOut, List, Wifi, WifiOff } from 'lucide-react';
 
+/**
+ * INTERFACES E TIPOS DE DADOS
+ * 
+ * Definição das estruturas de dados utilizadas na aplicação
+ */
+
+// Interface para coordenadas GPS
 interface Coordinates {
   latitude: number;
   longitude: number;
 }
 
+// Interface principal para dados da vistoria
+// Contém todos os campos necessários para criar uma vistoria completa
 interface VistoriaData {
-  // Identificação da obra
-  nomeObra: string;
-  localizacao: string;
-  numeroContrato: string;
-  empresaResponsavel: string;
-  engenheiroResponsavel: string;
-  fiscalPrefeitura: string;
-  dataVistoria: string;
-  horaVistoria: string;
+  // === IDENTIFICAÇÃO DA OBRA ===
+  nomeObra: string;                // Nome/título da obra
+  localizacao: string;             // Endereço ou coordenadas GPS
+  numeroContrato: string;          // Número do contrato da obra
+  empresaResponsavel: string;      // Nome da empresa executora
+  engenheiroResponsavel: string;   // Nome do engenheiro responsável
+  fiscalPrefeitura: string;        // Nome do fiscal da prefeitura
+  dataVistoria: string;            // Data da vistoria (YYYY-MM-DD)
+  horaVistoria: string;            // Hora da vistoria (HH:MM)
   
-  // Objetivos
-  objetivoVistoria: string[];
-  outroObjetivo: string;
+  // === OBJETIVOS DA VISTORIA ===
+  objetivoVistoria: string[];      // Array com objetivos selecionados
+  outroObjetivo: string;           // Descrição de outros objetivos
   
-  // Descrição
-  descricaoAtividades: string;
+  // === DESCRIÇÃO DAS ATIVIDADES ===
+  descricaoAtividades: string;     // Descrição detalhada das atividades
   
-  // Situação
-  situacaoObra: string;
-  detalhesPendencias: string;
+  // === SITUAÇÃO DA OBRA ===
+  situacaoObra: string;            // Situação atual da obra
+  detalhesPendencias: string;      // Detalhes sobre pendências (se houver)
   
-  // Recomendações
-  recomendacoes: string;
+  // === RECOMENDAÇÕES ===
+  recomendacoes: string;           // Recomendações do fiscal
   
-  // Assinaturas
-  fiscalNome: string;
-  fiscalMatricula: string;
-  representanteNome: string;
-  representanteCargo: string;
+  // === ASSINATURAS ===
+  fiscalNome: string;              // Nome do fiscal
+  fiscalMatricula: string;         // Matrícula do fiscal
+  representanteNome: string;       // Nome do representante da obra
+  representanteCargo: string;      // Cargo do representante
 
-  // Coordenadas GPS
-  latitude?: number;
-  longitude?: number;
+  // === COORDENADAS GPS ===
+  latitude?: number;               // Latitude GPS (opcional)
+  longitude?: number;              // Longitude GPS (opcional)
 }
 
+/**
+ * SCHEMAS DE VALIDAÇÃO COM ZOD
+ * 
+ * Esquemas de validação para os dados do formulário.
+ * Implementa validação condicional baseada no objetivo "Atualização Cadastral"
+ */
+
+// Schema base - todos os campos opcionais (usado para Atualização Cadastral)
 const vistoriaSchema = z.object({
-  // Identificação da obra
+  // === IDENTIFICAÇÃO DA OBRA ===
   nomeObra: z.string().optional(),
   localizacao: z.string().optional(),
   numeroContrato: z.string().optional(),
@@ -85,35 +131,46 @@ const vistoriaSchema = z.object({
   dataVistoria: z.string().optional(),
   horaVistoria: z.string().optional(),
   
-  // Objetivos
+  // === OBJETIVOS ===
   objetivoVistoria: z.array(z.string()).min(1, 'Selecione pelo menos um objetivo'),
   outroObjetivo: z.string().optional(),
   
-  // Descrição
+  // === DESCRIÇÃO ===
   descricaoAtividades: z.string().optional(),
   
-  // Situação
+  // === SITUAÇÃO ===
   situacaoObra: z.string().optional(),
   detalhesPendencias: z.string().optional(),
   
-  // Recomendações
+  // === RECOMENDAÇÕES ===
   recomendacoes: z.string().optional(),
   
-  // Assinaturas
+  // === ASSINATURAS ===
   fiscalNome: z.string().optional(),
   fiscalMatricula: z.string().optional(),
   representanteNome: z.string().optional(),
   representanteCargo: z.string().optional(),
 });
 
-// Schema condicional baseado no objetivo selecionado
+/**
+ * FUNÇÃO PARA CRIAR SCHEMA CONDICIONAL
+ * 
+ * Retorna diferentes schemas baseado no objetivo selecionado:
+ * - Se "Atualização Cadastral": todos os campos opcionais
+ * - Caso contrário: campos obrigatórios conforme regras de negócio
+ * 
+ * @param isAtualizacaoCadastral - Se o objetivo "Atualização Cadastral" foi selecionado
+ * @returns Schema de validação apropriado
+ */
 const createVistoriaSchema = (isAtualizacaoCadastral: boolean) => {
+  // Para Atualização Cadastral, usar schema base (campos opcionais)
   if (isAtualizacaoCadastral) {
     return vistoriaSchema;
   }
   
+  // Para outros objetivos, campos obrigatórios
   return z.object({
-    // Identificação da obra
+    // === IDENTIFICAÇÃO DA OBRA (OBRIGATÓRIOS) ===
     nomeObra: z.string().min(1, 'Nome da obra é obrigatório'),
     localizacao: z.string().min(1, 'Localização é obrigatória'),
     numeroContrato: z.string().min(1, 'Número do contrato é obrigatório'),
@@ -123,21 +180,21 @@ const createVistoriaSchema = (isAtualizacaoCadastral: boolean) => {
     dataVistoria: z.string().min(1, 'Data da vistoria é obrigatória'),
     horaVistoria: z.string().min(1, 'Hora da vistoria é obrigatória'),
     
-    // Objetivos
+    // === OBJETIVOS (OBRIGATÓRIOS) ===
     objetivoVistoria: z.array(z.string()).min(1, 'Selecione pelo menos um objetivo'),
     outroObjetivo: z.string().optional(),
     
-    // Descrição
+    // === DESCRIÇÃO (OBRIGATÓRIA) ===
     descricaoAtividades: z.string().min(1, 'Descrição das atividades é obrigatória'),
     
-    // Situação
+    // === SITUAÇÃO (OBRIGATÓRIA) ===
     situacaoObra: z.string().min(1, 'Situação da obra é obrigatória'),
     detalhesPendencias: z.string().optional(),
     
-    // Recomendações
+    // === RECOMENDAÇÕES (OPCIONAL) ===
     recomendacoes: z.string().optional(),
     
-    // Assinaturas
+    // === ASSINATURAS (OBRIGATÓRIAS) ===
     fiscalNome: z.string().min(1, 'Nome do fiscal é obrigatório'),
     fiscalMatricula: z.string().optional(),
     representanteNome: z.string().min(1, 'Nome do representante é obrigatório'),
@@ -145,10 +202,15 @@ const createVistoriaSchema = (isAtualizacaoCadastral: boolean) => {
   });
 };
 
+/**
+ * INTERFACE PARA FOTOS CAPTURADAS
+ * 
+ * Estrutura para armazenar dados das fotos capturadas durante a vistoria
+ */
 interface CapturedPhoto {
-  file: File;
-  preview: string;
-  legenda: string;
+  file: File;           // Arquivo de imagem original
+  preview: string;      // URL de preview da imagem (blob URL)
+  legenda: string;      // Legenda/descrição da foto
 }
 
 const Index = () => {

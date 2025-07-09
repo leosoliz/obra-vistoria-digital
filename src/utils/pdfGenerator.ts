@@ -1,40 +1,79 @@
+/**
+ * GERADOR DE PDF PARA RELATÓRIOS DE VISTORIA
+ * 
+ * Utilitário responsável por gerar relatórios de vistoria em formato PDF.
+ * Utiliza a biblioteca jsPDF para criar documentos profissionais com:
+ * - Cabeçalho oficial da prefeitura
+ * - Todas as informações da vistoria organizadas por seções
+ * - Fotos redimensionadas e legendadas
+ * - Espaços para assinaturas
+ * - Quebra de página automática
+ * 
+ * Funcionalidades:
+ * - Formatação profissional
+ * - Processamento de imagens
+ * - Quebra de página inteligente
+ * - Texto com quebra de linha automática
+ * - Download automático do arquivo
+ */
+
+// Importação da biblioteca jsPDF
 import jsPDF from 'jspdf';
 
+/**
+ * INTERFACE DOS DADOS DA VISTORIA
+ * 
+ * Define a estrutura dos dados necessários para gerar o relatório PDF.
+ * Corresponde aos dados retornados pela API do Supabase.
+ */
 interface VistoriaData {
-  id: string;
-  nome_obra: string;
-  localizacao: string;
-  data_vistoria: string;
-  hora_vistoria: string;
-  numero_contrato: string | null;
-  empresa_responsavel: string | null;
-  engenheiro_responsavel: string | null;
-  fiscal_prefeitura: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  objetivo_inicio_obra: boolean;
-  objetivo_vistoria_rotina: boolean;
-  objetivo_medicao: boolean;
-  objetivo_vistoria_tecnica: boolean;
-  objetivo_encerramento: boolean;
-  objetivo_outros: string | null;
-  descricao_atividades: string;
-  situacao_conformidade: boolean;
-  situacao_irregularidades: boolean;
-  situacao_pendencias: boolean;
-  situacao_paralisada: boolean;
-  situacao_finalizada: boolean;
-  detalhes_pendencias: string | null;
-  recomendacoes: string | null;
-  fiscal_nome: string | null;
-  representante_nome: string | null;
-  representante_cargo: string | null;
-  created_at: string;
+  // === IDENTIFICAÇÃO ===
+  id: string;                           // ID único da vistoria
+  nome_obra: string;                    // Nome da obra
+  localizacao: string;                  // Localização da obra
+  data_vistoria: string;                // Data da vistoria
+  hora_vistoria: string;                // Hora da vistoria
+  numero_contrato: string | null;       // Número do contrato
+  empresa_responsavel: string | null;   // Empresa responsável
+  engenheiro_responsavel: string | null; // Engenheiro responsável
+  fiscal_prefeitura: string | null;     // Fiscal da prefeitura
+  
+  // === COORDENADAS GPS ===
+  latitude: number | null;              // Latitude GPS
+  longitude: number | null;             // Longitude GPS
+  
+  // === OBJETIVOS DA VISTORIA ===
+  objetivo_inicio_obra: boolean;        // Início de obra
+  objetivo_vistoria_rotina: boolean;    // Vistoria de rotina
+  objetivo_medicao: boolean;            // Medição
+  objetivo_vistoria_tecnica: boolean;   // Vistoria técnica
+  objetivo_encerramento: boolean;       // Encerramento
+  objetivo_outros: string | null;       // Outros objetivos
+  
+  // === DESCRIÇÃO E SITUAÇÃO ===
+  descricao_atividades: string;         // Descrição das atividades
+  situacao_conformidade: boolean;       // Em conformidade
+  situacao_irregularidades: boolean;    // Com irregularidades
+  situacao_pendencias: boolean;         // Com pendências
+  situacao_paralisada: boolean;         // Paralisada
+  situacao_finalizada: boolean;         // Finalizada
+  detalhes_pendencias: string | null;   // Detalhes das pendências
+  
+  // === RECOMENDAÇÕES E ASSINATURAS ===
+  recomendacoes: string | null;         // Recomendações
+  fiscal_nome: string | null;           // Nome do fiscal
+  representante_nome: string | null;    // Nome do representante
+  representante_cargo: string | null;   // Cargo do representante
+  
+  // === METADADOS ===
+  created_at: string;                   // Data de criação
+  
+  // === FOTOS ===
   fotos: Array<{
-    id: string;
-    arquivo_url: string;
-    legenda: string;
-    ordem: number;
+    id: string;                         // ID da foto
+    arquivo_url: string;                // URL do arquivo
+    legenda: string;                    // Legenda da foto
+    ordem: number;                      // Ordem de exibição
   }>;
 }
 
